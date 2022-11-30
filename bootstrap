@@ -52,7 +52,7 @@
 
 
 # Unlike 'configure' this script only runs in the
-# source directory and generates file in the source
+# source directory and generates files in the source
 # directory where we assume this script file is.
 # See output from: $0 --help.
 
@@ -90,7 +90,7 @@ function bootstrap()
   WARNINGS=all autoreconf --force --verbose --install || cleanup_FAIL
   set +x
   echo "The automake subdir-objects warnings are not a concern."
-  echo "They make wrong assumptions about what this code it doing."
+  echo "They make wrong assumptions about what this code is doing."
   echo
   echo "Successfully added the GNU autotools files to quickscope"
   echo "The quickscope source is now bootstraped."
