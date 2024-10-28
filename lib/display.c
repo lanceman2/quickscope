@@ -39,7 +39,6 @@ void qsDisplay_destroy(struct QsDisplay *d) {
     DASSERT(d);
     DASSERT(lastDisplay);
 
-
     // Remove this display from the displays list.
 
     if(d->prev) {
