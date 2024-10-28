@@ -33,9 +33,9 @@ as we define it from the \c QS_MAJOR, \c QS_MINOR, and \c QS_EDIT.
 
 // This file may get installed in the "system" (or where ever installer
 // decides) so we do not pollute the CPP (C pre-processor) namespace by
-// defining EXPORT, instead we define SL_EXPORT
-#ifndef SL_EXPORT
-#  define SL_EXPORT extern
+// defining EXPORT, instead we define QS_EXPORT
+#ifndef QS_EXPORT
+#  define QS_EXPORT extern
 #endif
 
 
@@ -43,6 +43,9 @@ as we define it from the \c QS_MAJOR, \c QS_MINOR, and \c QS_EDIT.
 extern "C" {
 #endif
 
+
+QS_EXPORT struct QsDisplay *qsDisplay_create(void);
+QS_EXPORT void qsDisplay_destroy(struct QsDisplay *display);
 
 
 #ifdef __cplusplus

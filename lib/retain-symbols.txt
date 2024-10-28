@@ -2,3 +2,7 @@ assertAction
 getLibSpewLevel
 setSpewLevel
 spew
+qsDisplay_create
+qsDisplay_destroy
+
+

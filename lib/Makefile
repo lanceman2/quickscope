@@ -8,21 +8,23 @@ include $(root)/pkg-gtk4.make
 
 
 libquickscope.so_SOURCES :=\
- debug.c
+ debug.c\
+ constructor.c\
+ display.c
 libquickscope.so_CPPFLAGS :=\
  $(GTK_CFLAGS)\
  -DQS_LIB_CODE
 libquickscope.so_CFLAGS :=\
  -fvisibility=hidden\
- -DSL_EXPORT="__attribute__((visibility(\"default\"))) extern"\
- -DEXPORT="SL_EXPORT"
-
+ -DQS_EXPORT="__attribute__((visibility(\"default\"))) extern"\
+ -DEXPORT="QS_EXPORT"
+#
 # good read:
 #   https://amir.rachum.com/shared-libraries/
 #
 # The order of these LDFLAGS can matter.
 #
-# At some put we need an operating system package manager that
+# At some point we need an operating system package manager that
 # fixes this kind of (DSO dependency hell) shit, like NixOS.
 #
 # Run in a shell:

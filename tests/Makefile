@@ -16,6 +16,11 @@ malloc_no_free_CPPFLAGS := -DNO_FREE
 006_spew_LDFLAGS := $(QS_LIB)
 006_spew_CPPFLAGS := -I../include
 
+009_display_SOURCES := 009_display.c
+009_display_LDFLAGS := $(QS_LIB)
+009_display_CPPFLAGS := -I../include
+
+
 
 
 test: build
