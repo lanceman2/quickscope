@@ -2,11 +2,15 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include <gtk/gtk.h>
+
 #include "../include/quickscope.h"
 
 #include "debug.h"
 
+
 #include "display.h"
+#include "window.h"
 
 
 /** The list of all displays.   lastDisplay points to the last one that
@@ -20,7 +24,9 @@ struct QsDisplay *qsDisplay_create(void) {
     DSPEW();
 
     struct QsDisplay *d = calloc(1, sizeof(*d));
+    ASSERT(d, "calloc(1,%zu) failed", sizeof(*d));
 
+    ///////////////////////////////////////////////////////////////
     // Add this new display to the list of displays at lastDisplay,
     //
     d->prev = lastDisplay;
@@ -40,13 +46,20 @@ void qsDisplay_destroy(struct QsDisplay *d) {
     DASSERT(lastDisplay);
     DASSERT(!lastDisplay->next);
 
-    // Remove this display from the displays list.
+    /////////////////////////////////////////////////////
+    // Destroy all the windows owned by this display.
+    while(d->lastWindow)
+        qsWindow_destroy(d->lastWindow);
 
+
+    /////////////////////////////////////////////////////
+    // Remove this display from the displays list.
+    //
     if(d->prev) {
         d->prev->next = d->next;
     }
     // else we do not keep the first in the list.
-
+    //
     if(d->next) {
         DASSERT(lastDisplay != d);
         d->next->prev = d->prev;

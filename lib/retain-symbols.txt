@@ -4,5 +4,8 @@ setSpewLevel
 spew
 qsDisplay_create
 qsDisplay_destroy
+qsWindow_create
+qsWindow_destroy
+
 
 

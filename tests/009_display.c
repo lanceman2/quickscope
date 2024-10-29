@@ -1,5 +1,4 @@
-#include <quickscope.h>
-#include <quickscope_debug.h>
+#include "../include/quickscope.h"
 
 
 int main(void) {

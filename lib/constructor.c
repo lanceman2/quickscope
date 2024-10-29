@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include <gtk/gtk.h>
+
 #include "../include/quickscope.h"
 
 #include "debug.h"
@@ -9,13 +11,10 @@
 #include "display.h"
 
 
-
-
 static void __attribute__((constructor)) constructor(void) {
 
     DSPEW();
 }
-
 
 static void __attribute__((destructor)) destructor(void) {
 

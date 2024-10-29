@@ -43,9 +43,15 @@ as we define it from the \c QS_MAJOR, \c QS_MINOR, and \c QS_EDIT.
 extern "C" {
 #endif
 
+struct QsDisplay;
+struct QsWindow;
+
 
 QS_EXPORT struct QsDisplay *qsDisplay_create(void);
 QS_EXPORT void qsDisplay_destroy(struct QsDisplay *display);
+
+QS_EXPORT struct QsWindow *qsWindow_create(struct QsDisplay *display);
+QS_EXPORT void qsWindow_destroy(struct QsWindow *window);
 
 
 #ifdef __cplusplus

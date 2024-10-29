@@ -10,7 +10,8 @@ include $(root)/pkg-gtk4.make
 libquickscope.so_SOURCES :=\
  debug.c\
  constructor.c\
- display.c
+ display.c\
+ window.c
 libquickscope.so_CPPFLAGS :=\
  $(GTK_CFLAGS)\
  -DQS_LIB_CODE
