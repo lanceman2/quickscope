@@ -110,6 +110,8 @@ static void __attribute__((constructor)) constructor(void) {
 
 static void __attribute__((destructor)) destructor(void) {
 
+    DSPEW();
+
     if(app)
         g_object_unref(app);
 

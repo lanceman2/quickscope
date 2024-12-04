@@ -1,22 +1,29 @@
 {
-    name1
+    bash leaks
     Memcheck:Leak
     ...
     obj:/usr/bin/*
     ...
 }
 {
-    name2
+    Most libraries leak
     Memcheck:Leak
     ...
     obj:/bin/*
     ...
 }
 {
-    name3
+    Most libraries leak
     Memcheck:Leak
     ...
     obj:/lib/x86_64-linux-gnu/*
+    ...
+}
+{
+    Most libraries leak
+    Memcheck:Leak
+    ...
+    obj:/usr/lib/x86_64-linux-gnu/*
     ...
 }
 {
