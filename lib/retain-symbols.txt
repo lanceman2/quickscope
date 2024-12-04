@@ -1,0 +1,10 @@
+assertAction
+getLibSpewLevel
+setSpewLevel
+spew
+qsApp_create
+qsApp_destroy
+qsApp_run
+qsWindow_create
+qsWindow_destroy
+qsResourceDir

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This works with GTK3 version 3 -->
+<interface domain="quickscope">
+  <requires lib="gtk" version="3.0"/>
+
+  <object class="GtkWindow" id="window">
+  <property name="default-width">600</property>
+  <property name="default-height">500</property>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+
+        <child>
+          <object class="GtkMenuBar" id="menubar">
+          </object>
+        </child>
+
+        <child>
+          <object class="GtkBox">
+
+              <child>
+                <object class="GtkButton" id="buttonNewWindow">
+                  <child>
+                    <object class="GtkBox">
+                      <property name="tooltip-text" translatable="yes">Create a new main window</property>
+                      <property name="orientation">vertical</property>
+                      <property name="spacing">6</property>
+                      <child>
+                        <object class="GtkImage">
+                          <property name="name">buttonImage</property>
+                          <property name="icon-name">window-new</property>
+                          <property name="pixel-size">32</property>
+                        </object>
+                      </child>
+                      <child>
+                        <object class="GtkLabel">
+                          <property name="name">buttonlabel</property>
+                          <property name="label">New Window</property>
+                        </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSeparator"/>
+            </child>
+
+            <child>
+              <object class="GtkSeparator"/>
+            </child>
+            <child>
+              <object class="GtkButton" id="buttonNewGraphTab">
+                <property name="label" translatable="yes">New Tab</property>
+                <property name="tooltip-text" translatable="yes">Create a new tab</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSeparator"/>
+            </child>
+          </object>
+        </child>
+
+        <child>
+          <object class="GtkNotebook" id="notebook">
+            <property name="scrollable">1</property>
+          </object>
+          <packing>
+            <property name="expand">1</property>
+            <property name="fill">1</property>
+          </packing>
+        </child>
+ 
+      </object>
+
+    </child>
+  </object>
+</interface>
