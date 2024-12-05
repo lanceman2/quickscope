@@ -45,6 +45,8 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     DASSERT(wd);
     g_signal_connect(GTK_BUTTON(wd), "clicked", G_CALLBACK(NewGraphTab_cb), 0);
 
+    AddActions(GTK_WIDGET(gtkWindow), builder);
+
     g_object_unref(builder);
 
 
@@ -56,6 +58,7 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
 
     gtk_widget_show_all(GTK_WIDGET(gtkWindow));
 
+
     // Add a new graph tab.
     AddNewGraph(w, 0);
 }
@@ -65,6 +68,7 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
 //
 GtkBuilder *Get_builder_from_file(const char *filename) {
 
+    DSPEW();
     GtkBuilder *builder = gtk_builder_new();
     DASSERT(builder);
     GError *error = 0;

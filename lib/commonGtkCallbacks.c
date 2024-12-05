@@ -29,5 +29,3 @@ void NewGraphTab_cb(void) {
   AddNewGraph(win, 0);
 }
 
-  
-  

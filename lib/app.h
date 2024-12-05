@@ -32,9 +32,8 @@ static inline void GetApp(void) {
 
 extern uint32_t windowCount;
 
-extern void MakeGtkActionGroup(void);
-extern void AddActions(GtkWidget *w);
-
+extern void AddActions(GtkWidget *window, GtkBuilder *builder);
+extern void FreeActions(void);
 
 extern bool looping;
 

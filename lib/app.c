@@ -44,6 +44,8 @@ void Cleanup(void) {
     // If things are consistent this window counter should be zero.
     DASSERT(windowCount == 0);
 
+    FreeActions();
+
     g_object_unref(app);
     app = 0;
 
@@ -76,7 +78,8 @@ void qsApp_create(int argc, char **argv, GtkApplication *a) {
         app = a;
     else if(!app) {
         // This calls gtk_init() if it needs to be called.
-        app = gtk_application_new("org.gtk.quickscope", G_APPLICATION_DEFAULT_FLAGS);
+        app = gtk_application_new("org.gtk.quickscope",
+                G_APPLICATION_DEFAULT_FLAGS);
         ASSERT(app);
     }
 
