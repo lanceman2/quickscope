@@ -16,21 +16,30 @@ GtkAccelGroup *accel_group = 0;
 
 
 static void
-quit_cb(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
+quit_cb(GSimpleAction *action, GVariant *parameter,
+    gpointer user_data) {
 
     qsApp_destroy();
 }
 
 static void
-newTab_cb(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
+newTab_cb(GSimpleAction *action, GVariant *parameter,
+    gpointer user_data) {
 
     AddNewGraph(GetCurrentWindow(), 0);
 }
 
+static void
+newMainWindow_cb(GSimpleAction *action,
+    GVariant *parameter, gpointer user_data) {
+
+    qsWindow_create();
+}
 
 
 static GActionEntry entries[] = {
   { "newTab", newTab_cb, NULL, NULL, NULL },
+  { "newMainWindow", newMainWindow_cb, NULL, NULL, NULL },
   { "quit", quit_cb, NULL, NULL, NULL }
 };
 

@@ -37,14 +37,6 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     w->gtkNotebook = GTK_NOTEBOOK(gtk_builder_get_object(builder, "notebook"));
     DASSERT(w->gtkNotebook);
 
-    GtkWidget *wd = GTK_WIDGET(gtk_builder_get_object(builder, "buttonNewWindow"));
-    DASSERT(wd);
-    g_signal_connect(GTK_BUTTON(wd), "clicked", G_CALLBACK(qsWindow_create), 0);
-
-    wd = GTK_WIDGET(gtk_builder_get_object(builder, "buttonNewGraphTab"));
-    DASSERT(wd);
-    g_signal_connect(GTK_BUTTON(wd), "clicked", G_CALLBACK(NewGraphTab_cb), 0);
-
     AddActions(GTK_WIDGET(gtkWindow), builder);
 
     g_object_unref(builder);

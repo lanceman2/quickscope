@@ -1,5 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- This works with GTK3 version 3 -->
+<!-- This file works with GTK version 3
+
+ RANT:
+
+We started writing quickscope with GTK version 4, but
+after months of fighting bugs (in version 4) we switched
+to version 3. We are not developing GTK version 4. It
+appears to me that GTK version 4 does not address the
+short comings of GTK version 3. Both GTK3, GTK4, and Qt6
+are not what I consider robust code. The core main loop
+codes and other dependencies for all are a bloated leaky
+mess. The developers were too lazy to cleanup after their
+base objects. I tried to push them to fix their codes and
+mostly got the "It's not a bug" response. Unnecessarily
+using computer system resources is not a bug, but it
+is suboptimal. I think they can do better.
+
+-->
+
+<!--
+
+  This file is opened and parsed each time a quickscope main
+  window is made in a given process.  We assume that there
+  will not be a large number of quickscope main windows;
+  so we consider opening and parsing this file to not be
+  significantly contributing to a performance bottle-neck
+  in quickscope.
+
+  Developer note:
+
+C source files: lib/window.c lib/actions.c parse this file.
+
+-->
 <interface domain="quickscope">
   <requires lib="gtk" version="3.0"/>
 
@@ -11,6 +43,7 @@
         <property name="orientation">vertical</property>
 
 
+        <!-- start --- MENU BAR ------------------------------------->
         <child>
           <object class="GtkMenuBar" id="menubar">
             <property name="visible">1</property>
@@ -19,13 +52,19 @@
                 <property name="AtkObject::accessible-name">The menubar</property>
               </object>
             </child>
+
+
+            <!-- start --- FILE MENU ------------------------------->
             <child>
               <object class="GtkMenuItem">
                 <property name="visible">1</property>
                 <property name="label" translatable="yes">_File</property>
                 <property name="use-underline">1</property>
                 <child type="submenu">
+
                   <object class="GtkMenu">
+
+                    <!-- item --- NEW TAB -------------------------->
                     <child>
                       <object class="GtkMenuItem" id="newTab_item">
                         <property name="visible">1</property>
@@ -35,11 +74,15 @@
                         <property name="action-name">app.newTab</property>
                       </object>
                     </child>
+
+                    <!-- item --- SEPERATOR ------------------------->
                     <child>
                       <object class="GtkSeparatorMenuItem">
                         <property name="visible">1</property>
                       </object>
                     </child>
+
+                    <!-- item --- QUIT ----------------------------->
                     <child>
                       <object class="GtkMenuItem" id="quit_item">
                         <property name="visible">1</property>
@@ -48,12 +91,15 @@
                         <property name="action-name">app.quit</property>
                       </object>
                     </child>
+
                   </object>
                 </child>
               </object>
             </child>
+            <!-- end --- FILE MENU -------------------------------->
 
 
+            <!-- start --- VIEW MENU ------------------------------>
             <child>
               <object class="GtkMenuItem">
                 <property name="visible">1</property>
@@ -61,6 +107,8 @@
                 <property name="use-underline">1</property>
                 <child type="submenu">
                   <object class="GtkMenu">
+
+                    <!-- item --- ##### -------------------------->
                     <child>
                       <object class="GtkMenuItem" id="help_item">
                         <property name="visible">1</property>
@@ -69,6 +117,8 @@
                         <property name="action-name">win.help</property>
                       </object>
                     </child>
+
+                    <!-- item --- ##### -------------------------->
                     <child>
                       <object class="GtkMenuItem" id="about_item">
                         <property name="visible">1</property>
@@ -81,37 +131,44 @@
                 </child>
               </object>
             </child>
+            <!-- end --- VIEW MENU ------------------------------->
+
           </object>
           <packing>
             <property name="expand">0</property>
           </packing>
         </child>
+        <!-- end --- MENU BAR ------------------------------------->
 
 
+
+        <!-- start --- BUTTON BAR --------------------------------->
         <child>
           <object class="GtkBox">
 
-              <child>
-                <object class="GtkButton" id="buttonNewWindow">
-                  <property name="action-name">app.newMainWindow</property>
-                  <child>
-                    <object class="GtkBox">
-                      <property name="tooltip-text" translatable="yes"
-                        >Create a new main window</property>
-                      <property name="orientation">vertical</property>
-                      <property name="spacing">6</property>
-                      <child>
-                        <object class="GtkImage">
-                          <property name="name">buttonImage</property>
-                          <property name="icon-name">window-new</property>
-                          <property name="pixel-size">32</property>
-                        </object>
-                      </child>
-                      <child>
-                        <object class="GtkLabel">
-                          <property name="name">buttonlabel</property>
-                          <property name="label">New Window</property>
-                        </object>
+
+            <!-- button --- NEW MAIN WINDOW --------------------->
+            <child>
+              <object class="GtkButton" id="buttonNewWindow">
+                <property name="action-name">app.newMainWindow</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="tooltip-text" translatable="yes"
+                      >Create a new main window</property>
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="name">buttonImage</property>
+                        <property name="icon-name">window-new</property>
+                        <property name="pixel-size">32</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="name">buttonlabel</property>
+                        <property name="label">New Window</property>
+                      </object>
                     </child>
                   </object>
                 </child>
@@ -121,9 +178,7 @@
               <object class="GtkSeparator"/>
             </child>
 
-            <child>
-              <object class="GtkSeparator"/>
-            </child>
+            <!-- button --- NEW TAB ----------------------------->
             <child>
               <object class="GtkButton" id="buttonNewGraphTab">
                 <property name="label" translatable="yes">New Tab</property>
@@ -136,6 +191,9 @@
             </child>
           </object>
         </child>
+
+        <!-- end --- BUTTON BAR ---------------------------------->
+        
 
         <child>
           <object class="GtkNotebook" id="notebook">
