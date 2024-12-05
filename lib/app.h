@@ -14,8 +14,6 @@ struct QsWindow {
     GtkWindow *gtkWindow;
 
     GtkNotebook *gtkNotebook;
-
-    GtkStatusbar *gtkStatusbar;
 };
 
 
@@ -54,7 +52,8 @@ static inline GtkWindow *GetCurrentGtkWindow(void) {
 static inline struct QsWindow *GetCurrentWindow(void) {
 
     GtkWindow *gtkWindow = GetCurrentGtkWindow();
-    struct QsWindow *w = g_object_get_data(G_OBJECT(gtkWindow), "qsWindow");
+    struct QsWindow *w = g_object_get_data(G_OBJECT(gtkWindow),
+            "qsWindow");
     DASSERT(w);
     return w;
 }
