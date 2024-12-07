@@ -1,18 +1,16 @@
 
 struct QsWindow {
 
-    // The GActionGroup callbacks are called from a more "global"
-    // perspective (scope) and do not have user_data pointer arguments passed
-    // that point to specific objects; so we need to put pointers
-    // here in this structure which we can get access to in the code with
-    // the function gtk_application_get_active_window(app) where we
-    // set the GtkWindow user data via the call:
-    // g_object_set_data(G_OBJECT(gtkWindow), "qsWindow", w)
-    // where w is a pointer to this structure.
-    //
+    //GActionGroup *actions;
+    //GtkAccelGroup *accel_group;
+
+    GtkWidget *menubar;   // Top Main Menu Bar
+    GtkWidget *buttonbar; // H Box of the Main button bar
+
+    GtkCheckMenuItem *showMenubar_item;
+    GtkCheckMenuItem *showButtonbar_item;
 
     GtkWindow *gtkWindow;
-
     GtkNotebook *gtkNotebook;
 };
 
@@ -32,8 +30,9 @@ static inline void GetApp(void) {
 
 extern uint32_t windowCount;
 
-extern void AddActions(GtkWidget *window, GtkBuilder *builder);
-extern void FreeActions(void);
+extern void AddActions(struct QsWindow *w, GtkBuilder *builder);
+extern void FreeActions(struct QsWindow *window);
+extern void FreeAccelGroup(void);
 
 extern bool looping;
 

@@ -16,53 +16,45 @@ GtkAccelGroup *accel_group = 0;
 
 
 static void
-quit_cb(GSimpleAction *action, GVariant *parameter,
-    gpointer user_data) {
+quit_cb(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
 
     qsApp_destroy();
 }
 
-static void
-newTab_cb(GSimpleAction *action, GVariant *parameter,
-    gpointer user_data) {
-
-    AddNewGraph(GetCurrentWindow(), 0);
-}
 
 static void
-newMainWindow_cb(GSimpleAction *action,
-    GVariant *parameter, gpointer user_data) {
+showMenubar_cb(GSimpleAction *action, GVariant *parameter, gpointer user_data) {
 
-    qsWindow_create();
+    ERROR();
+    
 }
 
 
 static GActionEntry entries[] = {
-  { "newTab", newTab_cb, NULL, NULL, NULL },
-  { "newMainWindow", newMainWindow_cb, NULL, NULL, NULL },
-  { "quit", quit_cb, NULL, NULL, NULL }
+  { "quit", quit_cb, NULL, NULL, NULL },
+  { "showMenubar", showMenubar_cb, NULL, NULL, NULL }
 };
 
 
 static inline void AddAccelerator(GtkBuilder *builder,
-    const char *id, uint16_t key) {
+    const char *id, guint key) {
 
   GtkWidget *item = (GtkWidget*) gtk_builder_get_object(builder, id);
-  DASSERT(item);
 
-  // This first call to gtk_widget_add_accelerator() will add the key
-  // label to the menu item without the Ctrl+key (just key) since the key
-  // mask is 0.
+  // This first call to gtk_widget_add_accelerator() will add
+  // the key label to the menu item without the Ctrl+key since
+  // the key mask is 0.
   gtk_widget_add_accelerator(item, "activate", accel_group,
-          key, 0, GTK_ACCEL_VISIBLE);
-  // This call will not have the Ctrl+key showing in the menu item,
-  // because the call above got it set before this.
+          key, 0, GTK_ACCEL_LOCKED);
+  // This call will not have the Ctrl+key showing in the
+  // menu item, because the call above got it set before this.
   gtk_widget_add_accelerator(item, "activate", accel_group,
-          key, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+          key, GDK_CONTROL_MASK, GTK_ACCEL_LOCKED);
 }
 
 
-void AddActions(GtkWidget *w, GtkBuilder *builder) {
+void AddActions(struct QsWindow *win, GtkBuilder *builder) {
+
 
     DSPEW();
     if(!actions) {
@@ -71,15 +63,22 @@ void AddActions(GtkWidget *w, GtkBuilder *builder) {
                 entries, G_N_ELEMENTS(entries), 0);
         accel_group = gtk_accel_group_new();
     }
+    if(!win) return;
 
-    gtk_widget_insert_action_group(w, "app", actions);
-    gtk_window_add_accel_group(GTK_WINDOW (w), accel_group);
+    DASSERT(win->gtkWindow);
+
+    win->menubar = GTK_WIDGET(gtk_builder_get_object(builder, "menubar"));
+    DASSERT(win->menubar);
+    gtk_widget_hide(win->menubar);
+
+    gtk_widget_insert_action_group(GTK_WIDGET(win->gtkWindow), "app", actions);
+    gtk_window_add_accel_group(GTK_WINDOW(win->gtkWindow), accel_group);
     AddAccelerator(builder, "quit_item", GDK_KEY_q);
-    AddAccelerator(builder, "newTab_item", GDK_KEY_t);
+    AddAccelerator(builder, "showMenubar_item", GDK_KEY_m);
 }
 
 
-void FreeActions(void) {
+void FreeActions(struct QsWindow *window) {
 
   if(!actions) {
 
@@ -89,4 +88,7 @@ void FreeActions(void) {
       actions = 0;
   }
 }
+
+
+void FreeAccelGroup(void) {}
 

@@ -19,6 +19,9 @@ static void DestroyWindow_cb(GtkWindow *gtkWindow, struct QsWindow *w) {
     DASSERT(w->gtkWindow == gtkWindow);
 
     DSPEW("freeing GTK main window=%p", w->gtkWindow);
+
+    FreeActions(w);
+
     DZMEM(w, sizeof(*w));
     free(w);
 
@@ -37,7 +40,9 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     w->gtkNotebook = GTK_NOTEBOOK(gtk_builder_get_object(builder, "notebook"));
     DASSERT(w->gtkNotebook);
 
-    AddActions(GTK_WIDGET(gtkWindow), builder);
+    gtk_widget_show_all(GTK_WIDGET(gtkWindow));
+
+    AddActions(w, builder);
 
     g_object_unref(builder);
 
@@ -48,7 +53,6 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     gtk_widget_show(GTK_WIDGET(gtkWindow));
     g_signal_connect(gtkWindow, "destroy", G_CALLBACK(DestroyWindow_cb), w);
 
-    gtk_widget_show_all(GTK_WIDGET(gtkWindow));
 
 
     // Add a new graph tab.

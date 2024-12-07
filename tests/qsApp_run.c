@@ -8,8 +8,8 @@ int main(void) {
     //qsApp_create(0, 0, 0);
 
     // Creating extra windows is optional:
-    qsWindow_create();
-    qsWindow_create();
+    //qsWindow_create();
+    //qsWindow_create();
 
     // If you do not call this you are not going to see any windows:
     //qsApp_run(0, 0);

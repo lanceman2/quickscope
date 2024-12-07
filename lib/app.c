@@ -44,7 +44,7 @@ void Cleanup(void) {
     // If things are consistent this window counter should be zero.
     DASSERT(windowCount == 0);
 
-    FreeActions();
+    FreeAccelGroup();
 
     g_object_unref(app);
     app = 0;
@@ -61,6 +61,7 @@ static void startup_cb (GApplication *application) {
     DASSERT(G_APPLICATION(app) == application);
 
     CreatePopoverMenu();
+    AddActions(0, 0);
 }
 
 
@@ -83,7 +84,7 @@ void qsApp_create(int argc, char **argv, GtkApplication *a) {
         ASSERT(app);
     }
 
-    g_signal_connect(app, "startup", G_CALLBACK(startup_cb), 0);
+    g_signal_connect(app, "activate", G_CALLBACK(startup_cb), 0);
 
     // TODO: Parse arguments if they are non-zero.
     if(argv && argc > 0)

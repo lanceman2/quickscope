@@ -11,10 +11,81 @@ short comings of GTK version 3. Both GTK3, GTK4, and Qt6
 are not what I consider robust code. The core main loop
 codes and other dependencies for all are a bloated leaky
 mess. The developers were too lazy to cleanup after their
-base objects. I tried to push them to fix their codes and
-mostly got the "It's not a bug" response. Unnecessarily
-using computer system resources is not a bug, but it
-is suboptimal. I think they can do better.
+foundational base objects. I tried to push them to fix
+their codes and mostly got the "It's not a bug" response.
+Unnecessarily allocating computer system resources is not
+a bug, but it is suboptimal. I think they can do better.
+These library API's a designed with the assumption that
+processes will always terminate after using them.  For
+me that seems like a huge flaw; a process can't cleanup
+after it finishes using the library.  Doing on-the-fly
+program editing makes the program turn into a bloated
+monster, with the size of memory mappings of the program
+being many orders of magnitude larger than they need
+to be after finishing using the libraries.  To remove
+the "bloat" the process could restart without the
+bloat libraries, but how do we get the needed state
+transferred to the new process.  That is state that
+is defined by the running program before the restart.
+This seems to point to adding some keep of linker/loader
+operation just after a call to fork(2); that removes
+the now useless library bloat (system resources):
+memory mappings, file descriptors, and other kernel
+resources that are no longer needed; along with making
+sure the any "pointers" to these the now useless library
+bloat for no longer tried to be used.
+The execl(2) system call would do the cleaning, but at
+the expense of losing all state that may be needed by the
+running program.
+
+A solution to this problem would be to train people to
+write robust libraries and let the libraries clean themselves;
+but that's a very hard thing to do.  I tried with Qt6 (web
+bug report system) and got the "that's not what we do" and
+"that's not a bug" response.  The way I see it, Qt6 (and GTK)
+"by design" leaks system resources.  It saves some of
+the "core" developers time to not have to write code that
+cleans up after itself.
+
+One can think of Python as a C program that when running can
+(on-the-fly) change the code of the running program; though
+most python modules cannot unload completely.  Most of the
+underlying binary libraries cannot unload completely; and
+so running Python programs can have code added, but have
+difficulty removing code (though they could give the
+appearance of unloading at the Python interface).
+
+Q1: Can a running Python program save itself?
+
+A1: I need to search and research this idea ...
+
+
+Q2: How is a running program saving itself different from
+   using checkpoint and restart (CPR)?
+
+A2:
+    1. We are trying to edit the running program on the fly,
+  whereas CPR is not concerned with editing the program as it
+  is running.
+    2. We are writing the code with a framework (libaries)
+  that limit the interactions between modules; so that
+  defines inter-module interfaces (Python does this).
+    3. a) The run-time overhead and complexity of using CPR is
+  huge, but program (module) developer time imposed by it
+  is zero.
+       b) The run-time overhead of using small and/or negative
+  given the use of fast framework inter-module interfaces,
+  but the users code is constrained by the framework; so
+  foresight is required when coding the program.
+
+Two kinds of module unload: clean and dirty.
+  clean: makes it like it was before the module (and its dependencies) was
+    loaded
+  dirty: can't unload some module libraries, but framework and modules pretends
+    and removes the inter-module interfaces from the process.
+
+I need to see what python does to handle unloading leaky libraries...
+
 
 -->
 
@@ -58,8 +129,7 @@ C source files: lib/window.c lib/actions.c parse this file.
             <child>
               <object class="GtkMenuItem">
                 <property name="visible">1</property>
-                <property name="label" translatable="yes">_File</property>
-                <property name="use-underline">1</property>
+                <property name="label" translatable="yes">Main</property>
                 <child type="submenu">
 
                   <object class="GtkMenu">
@@ -70,7 +140,6 @@ C source files: lib/window.c lib/actions.c parse this file.
                         <property name="visible">1</property>
                         <property name="label" translatable="yes"
                           >New Tab</property>
-                        <property name="use-underline">1</property>
                         <property name="action-name">app.newTab</property>
                       </object>
                     </child>
@@ -86,8 +155,7 @@ C source files: lib/window.c lib/actions.c parse this file.
                     <child>
                       <object class="GtkMenuItem" id="quit_item">
                         <property name="visible">1</property>
-                        <property name="label" translatable="yes">_Quit</property>
-                        <property name="use-underline">1</property>
+                        <property name="label" translatable="yes">Quit</property>
                         <property name="action-name">app.quit</property>
                       </object>
                     </child>
@@ -103,28 +171,29 @@ C source files: lib/window.c lib/actions.c parse this file.
             <child>
               <object class="GtkMenuItem">
                 <property name="visible">1</property>
-                <property name="label" translatable="yes">_Help</property>
-                <property name="use-underline">1</property>
+                <property name="label" translatable="yes">View</property>
                 <child type="submenu">
                   <object class="GtkMenu">
 
-                    <!-- item --- ##### -------------------------->
+                    <!-- item --- SHOW MENU ----------------------->
                     <child>
-                      <object class="GtkMenuItem" id="help_item">
+                      <object class="GtkCheckMenuItem" id="showMenubar_item">
                         <property name="visible">1</property>
-                        <property name="label" translatable="yes">_Help</property>
-                        <property name="use-underline">1</property>
-                        <property name="action-name">win.help</property>
+                        <property name="active">true</property>
+                        <property name="label" translatable="yes"
+                          >Show Menu</property>
+                        <property name="action-name">app.showMenubar</property>
                       </object>
                     </child>
 
-                    <!-- item --- ##### -------------------------->
+                    <!-- item --- SHOW BUTTON BAR ---------------->
                     <child>
-                      <object class="GtkMenuItem" id="about_item">
+                      <object class="GtkCheckMenuItem" id="showButtonbar_item">
                         <property name="visible">1</property>
-                        <property name="label" translatable="yes">_About</property>
-                        <property name="use-underline">1</property>
-                        <property name="action-name">win.about</property>
+                        <property name="active">true</property>
+                        <property name="label" translatable="yes"
+                          >Show Button Bar</property>
+                        <property name="action-name">app.showButtonbar</property>
                       </object>
                     </child>
                   </object>
@@ -144,17 +213,16 @@ C source files: lib/window.c lib/actions.c parse this file.
 
         <!-- start --- BUTTON BAR --------------------------------->
         <child>
-          <object class="GtkBox">
+          <object class="GtkBox" id="buttonbar">
 
-
-            <!-- button --- NEW MAIN WINDOW --------------------->
+            <!-- button --- NEW MAIN WINDOW ----------------------->
             <child>
-              <object class="GtkButton" id="buttonNewWindow">
+              <object class="GtkButton">
                 <property name="action-name">app.newMainWindow</property>
                 <child>
                   <object class="GtkBox">
                     <property name="tooltip-text" translatable="yes"
-                      >Create a new main window</property>
+                      >Create A New Main Window</property>
                     <property name="orientation">vertical</property>
                     <property name="spacing">6</property>
                     <child>
@@ -178,20 +246,40 @@ C source files: lib/window.c lib/actions.c parse this file.
               <object class="GtkSeparator"/>
             </child>
 
-            <!-- button --- NEW TAB ----------------------------->
+            <!-- button --- NEW TAB ---------------------------->
             <child>
-              <object class="GtkButton" id="buttonNewGraphTab">
-                <property name="label" translatable="yes">New Tab</property>
-                <property name="tooltip-text" translatable="yes"
-                  >Create a new tab</property>
+              <object class="GtkButton">
+                <property name="action-name">app.newTab</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="tooltip-text" translatable="yes"
+                      >Create A New Graph Tab</property>
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">6</property>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="name">buttonImage</property>
+                        <property name="icon-name">folder-new</property>
+                        <property name="pixel-size">32</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="name">buttonlabel</property>
+                        <property name="label">New Tab</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
             </child>
             <child>
               <object class="GtkSeparator"/>
             </child>
+
+
           </object>
         </child>
-
         <!-- end --- BUTTON BAR ---------------------------------->
         
 
