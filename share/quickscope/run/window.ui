@@ -76,13 +76,16 @@ A2:
        b) The run-time overhead of using small and/or negative
   given the use of fast framework inter-module interfaces,
   but the users code is constrained by the framework; so
-  foresight is required when coding the program.
+  foresight is required when coding the programs.
 
 Two kinds of module unload: clean and dirty.
   clean: makes it like it was before the module (and its dependencies) was
-    loaded
-  dirty: can't unload some module libraries, but framework and modules pretends
-    and removes the inter-module interfaces from the process.
+    loaded.  Of course not exactly that, there will some state changes
+    in the process.
+  dirty: can't unload some module libraries, but framework and modules
+    pretends and removes the inter-module interfaces from the process.  As
+    with the dirty case there will some state changes in the process which
+    of the same as in the clean case.
 
 I need to see what python does to handle unloading leaky libraries...
 
@@ -136,7 +139,7 @@ C source files: lib/window.c lib/actions.c parse this file.
 
                     <!-- item --- NEW TAB -------------------------->
                     <child>
-                      <object class="GtkMenuItem" id="newTab_item">
+                      <object class="GtkImageMenuItem" id="newTab_item">
                         <property name="visible">1</property>
                         <property name="label" translatable="yes"
                           >New Tab</property>
@@ -248,7 +251,7 @@ C source files: lib/window.c lib/actions.c parse this file.
 
             <!-- button --- NEW TAB ---------------------------->
             <child>
-              <object class="GtkButton">
+              <object class="GtkButton" id="newTab_button">
                 <property name="action-name">app.newTab</property>
                 <child>
                   <object class="GtkBox">
