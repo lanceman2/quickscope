@@ -44,8 +44,6 @@ void Cleanup(void) {
     // If things are consistent this window counter should be zero.
     DASSERT(windowCount == 0);
 
-    FreeAccelGroup();
-
     g_object_unref(app);
     app = 0;
 

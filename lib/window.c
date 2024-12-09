@@ -42,9 +42,8 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
 
     gtk_widget_show_all(GTK_WIDGET(gtkWindow));
 
-    AddActions(w, builder);
+    //AddActions(w, builder);
 
-    g_object_unref(builder);
 
 
     g_object_set_data(G_OBJECT(gtkWindow), "qsWindow", w);
@@ -53,7 +52,9 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     gtk_widget_show(GTK_WIDGET(gtkWindow));
     g_signal_connect(gtkWindow, "destroy", G_CALLBACK(DestroyWindow_cb), w);
 
+    AddActions(w, builder);
 
+    g_object_unref(builder);
 
     // Add a new graph tab.
     AddNewGraph(w, 0);
