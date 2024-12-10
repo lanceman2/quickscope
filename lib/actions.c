@@ -13,6 +13,10 @@
 #include "accel_keys.h"
 
 
+// This is a lot of code in order to change the GTK3 (and GTK4) action
+// user interface pattern which we did not want.
+
+
 // We tried to use actions as they are intended to be used, but they are
 // much to constraining for what we need in quickscope.  Actions is even
 // worse in GTK4 conpared to GTK3.
@@ -21,23 +25,20 @@
 // signals name space mapping to callback functions which is too
 // constraining for quickstream.  Layers of shit on shit, leading to
 // broken shit that I can't use as was intended.
-//
-//GActionGroup *actions = 0;
 
 // This accel_group object will never call the attached "activate"
 // function handlers, because we want these "accelerator keys" to do their
 // thing when the widget is hidden too, so we catch and block the key
 // events in the main window and call the would be function handlers
-// there.  This would be very hard to do in GTK4, and this is the main
+// there.  This would be very hard to do in GTK4, and this is one
 // reason we use GTK3 and not GTK4.  In GTK4 there is no catching of
 // key-press events of the main window widget, but GTK3 has that.
 //
 // We just use it so menu items label the accelerator keys on them.
-//
-//GtkAccelGroup *accel_group = 0;
 
 
 // activate_*() gets called from the GActionGroup stuff.
+
 static void
 activate_quit(GSimpleAction *action, GVariant *parameter,
         void *user_data) {
@@ -54,6 +55,11 @@ activate_showHideButtonbar(GSimpleAction *action, GVariant *parameter,
     showHideButtonbar_cb();
 }
 static void
+activate_showHideTabbar(GSimpleAction *action, GVariant *parameter,
+        void *user_data) {
+    showHideTabbar_cb();
+}
+static void
 activate_newTab(GSimpleAction *action, GVariant *parameter,
         void *user_data) {
     newTab_cb();
@@ -68,6 +74,11 @@ activate_closeWindow(GSimpleAction *action, GVariant *parameter,
         void *user_data) {
     closeWindow_cb();
 }
+static void
+activate_closeTab(GSimpleAction *action, GVariant *parameter,
+        void *user_data) {
+    closeTab_cb();
+}
 
 
 // The stupid GActionEntry interface does not let us pass a fucking
@@ -78,14 +89,17 @@ static GActionEntry entries[] = {
   { "quit",              activate_quit },
   { "showHideMenubar",   activate_showHideMenubar},
   { "showHideButtonbar", activate_showHideButtonbar },
+  { "showHideTabbar",    activate_showHideTabbar },
   { "newTab",            activate_newTab },
-  { "newWindow",     activate_newWindow },
-  { "closeWindow",     activate_closeWindow }
+  { "newWindow",         activate_newWindow },
+  { "closeTab",          activate_closeTab },
+  { "closeWindow",       activate_closeWindow }
 };
 
 
 static inline GtkWidget *AddAccelerator(struct QsWindow *win,
-    GtkBuilder *builder, const char *id, guint key) {
+    GtkBuilder *builder, const char *id, guint key,
+    uint32_t mod_mask) {
 
   GtkWidget *w = (GtkWidget*) gtk_builder_get_object(builder, id);
   DASSERT(w);
@@ -106,7 +120,7 @@ static inline GtkWidget *AddAccelerator(struct QsWindow *win,
   ///  hide memu items.
   ///
   gtk_widget_add_accelerator(w, "activate", win->accel_group,
-          key, 0, GTK_ACCEL_VISIBLE);
+          key, mod_mask, GTK_ACCEL_VISIBLE);
   return w;
 }
 
@@ -136,18 +150,22 @@ void AddActions(struct QsWindow *win, GtkBuilder *builder) {
             win->actions);
     gtk_window_add_accel_group(GTK_WINDOW(win->gtkWindow), win->accel_group);
     win->showHideMenubar_item = GTK_CHECK_MENU_ITEM(AddAccelerator(win, builder,
-          "showHideMenubar_item", ShowHideMenubar_key));
+          "showHideMenubar_item", ShowHideMenubar_key,0 ));
     win->showHideButtonbar_item = GTK_CHECK_MENU_ITEM(AddAccelerator(win, builder,
-          "showHideButtonbar_item", ShowHideButtonbar_key));
+          "showHideButtonbar_item", ShowHideButtonbar_key, 0));
+    win->showHideTabbar_item = GTK_CHECK_MENU_ITEM(AddAccelerator(win, builder,
+          "showHideTabbar_item", ShowHideTabbar_key, 0));
 
-    AddAccelerator(win, builder, "newWindow_item", NewWindow_key);
-    AddAccelerator(win, builder, "newTab_item", NewTab_key);
-    AddAccelerator(win, builder, "cloaeWindow_item", CloseWindow_key);
-    AddAccelerator(win, builder, "quit_item", Quit_key);
-
+    AddAccelerator(win, builder, "newWindow_item", NewWindow_key, 0);
+    AddAccelerator(win, builder, "newTab_item", NewTab_key, 0);
+    AddAccelerator(win, builder, "closeTab_item", CloseTab_key, GDK_SHIFT_MASK);
+    AddAccelerator(win, builder, "closeWindow_item", CloseWindow_key,
+            GDK_SHIFT_MASK);
+    AddAccelerator(win, builder, "quit_item", Quit_key, 0);
 
     win->menubar_showing = true;
     win->buttonbar_showing = true;
+    win->tabbar_showing = true;
 }
 
 

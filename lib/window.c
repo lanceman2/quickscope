@@ -13,6 +13,9 @@
 #include "accel_keys.h"
 
 
+uint32_t mod_keys = 0;
+
+
 static void DestroyWindow_cb(GtkWindow *gtkWindow, struct QsWindow *w) {
 
     DASSERT(gtkWindow);
@@ -29,6 +32,21 @@ static void DestroyWindow_cb(GtkWindow *gtkWindow, struct QsWindow *w) {
     --windowCount;
 }
 
+
+static gboolean keyRelease_window_cb(GtkWidget *widget, GdkEvent *e,
+        gpointer data) {
+
+    switch(e->key.keyval) {
+        case GDK_KEY_Shift_L:
+        case GDK_KEY_Shift_R:
+            // Mark the key as not set.
+            mod_keys &= ~MOD_SHIFT;
+            break;
+    }
+
+    return TRUE;
+}
+
 static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
         struct QsWindow *win) {
     // This is something that you can no longer do (at least easily) in
@@ -43,12 +61,33 @@ static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
     // Ya! This fucking works.  I can grab events before the GAction
     // bullshit fucks it up.  GTK4 can't do it this way, if at all.
 
+    if(mod_keys & MOD_SHIFT) {
+        switch(e->key.keyval) {
+
+            case CloseTab_key:
+                closeTab_cb();
+                return TRUE;
+            case CloseWindow_key:
+                closeWindow_cb();
+                return TRUE;
+        }
+        return FALSE;
+    }
+
+
     switch(e->key.keyval) {
+
+        case GDK_KEY_Shift_L:
+        case GDK_KEY_Shift_R:
+            // Mark the key as set.
+            mod_keys |= MOD_SHIFT;
+            return TRUE;
+
+        case ShowHideTabbar_key:
+            showHideTabbar_cb();
+            return TRUE;
         case ShowHideButtonbar_key:
             showHideButtonbar_cb();
-            return TRUE;
-        case CloseWindow_key:
-            closeWindow_cb();
             return TRUE;
         case ShowHideMenubar_key:
             showHideMenubar_cb();
@@ -62,9 +101,6 @@ static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
         case NewTab_key:
             newTab_cb();
             return TRUE;
-
-         default:
-            break;
     }
 
     /* return FALSE means the event is not handled; so it's propagated to
@@ -96,6 +132,9 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     g_signal_connect(gtkWindow, "destroy", G_CALLBACK(DestroyWindow_cb), w);
     g_signal_connect(gtkWindow, "key-press-event",
             G_CALLBACK(keyPress_window_cb), w);
+    g_signal_connect(gtkWindow, "key-release-event",
+            G_CALLBACK(keyRelease_window_cb), w);
+
 
     AddActions(w, builder);
 

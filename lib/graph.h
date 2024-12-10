@@ -4,10 +4,10 @@ struct QsGraph {
 
     void *data;
     GtkWidget *tab;
+    GtkWidget *vbox;
     //GtkWidget *drawingArea;
     //GtkWidget *entry;
     //GtkStatusbar *statusbar;
-    //GtkGesture *gesture;
 };
 
 

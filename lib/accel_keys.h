@@ -8,13 +8,17 @@
 // If we need to we may add a modifier key like Ctrl or Shift
 // for these key presses to take action.
 //
-#define ControlMod_keys             0
+
+#define MOD_SHIFT                   01   
 
 
-#define ShowHideButtonbar_key       GDK_KEY_b
+
 #define ShowHideMenubar_key         GDK_KEY_m
-#define CloseWindow_key             GDK_KEY_c
-#define NewTab_key                  GDK_KEY_t
-#define NewWindow_key               GDK_KEY_n
+#define ShowHideTabbar_key          GDK_KEY_t
+#define ShowHideButtonbar_key       GDK_KEY_b
+#define NewTab_key                  GDK_KEY_g
+#define CloseTab_key                GDK_KEY_g // with MOD_SHIFT
+#define NewWindow_key               GDK_KEY_w
+#define CloseWindow_key             GDK_KEY_w // with MOD_SHIFT
 #define Quit_key                    GDK_KEY_q
 

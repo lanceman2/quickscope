@@ -69,6 +69,7 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
     gtk_widget_show_all(vbox);
 
     g->tab = tab;
+    g->vbox = vbox;
 }
 
 

@@ -1,94 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- This file works with GTK version 3
 
- RANT:
-
 We started writing quickscope with GTK version 4, but
 after months of fighting bugs (in version 4) we switched
-to version 3. We are not developing GTK version 4. It
-appears to me that GTK version 4 does not address the
-short comings of GTK version 3. Both GTK3, GTK4, and Qt6
-are not what I consider robust code. The core main loop
-codes and other dependencies for all are a bloated leaky
-mess. The developers were too lazy to cleanup after their
-foundational base objects. I tried to push them to fix
-their codes and mostly got the "It's not a bug" response.
-Unnecessarily allocating computer system resources is not
-a bug, but it is suboptimal. I think they can do better.
-These library API's a designed with the assumption that
-processes will always terminate after using them.  For
-me that seems like a huge flaw; a process can't cleanup
-after it finishes using the library.  Doing on-the-fly
-program editing makes the program turn into a bloated
-monster, with the size of memory mappings of the program
-being many orders of magnitude larger than they need
-to be after finishing using the libraries.  To remove
-the "bloat" the process could restart without the
-bloat libraries, but how do we get the needed state
-transferred to the new process.  That is state that
-is defined by the running program before the restart.
-This seems to point to adding some keep of linker/loader
-operation just after a call to fork(2); that removes
-the now useless library bloat (system resources):
-memory mappings, file descriptors, and other kernel
-resources that are no longer needed; along with making
-sure the any "pointers" to these the now useless library
-bloat for no longer tried to be used.
-The execl(2) system call would do the cleaning, but at
-the expense of losing all state that may be needed by the
-running program.
-
-A solution to this problem would be to train people to
-write robust libraries and let the libraries clean themselves;
-but that's a very hard thing to do.  I tried with Qt6 (web
-bug report system) and got the "that's not what we do" and
-"that's not a bug" response.  The way I see it, Qt6 (and GTK)
-"by design" leaks system resources.  It saves some of
-the "core" developers time to not have to write code that
-cleans up after itself.
-
-One can think of Python as a C program that when running can
-(on-the-fly) change the code of the running program; though
-most python modules cannot unload completely.  Most of the
-underlying binary libraries cannot unload completely; and
-so running Python programs can have code added, but have
-difficulty removing code (though they could give the
-appearance of unloading at the Python interface).
-
-Q1: Can a running Python program save itself?
-
-A1: I need to search and research this idea ...
-
-
-Q2: How is a running program saving itself different from
-   using checkpoint and restart (CPR)?
-
-A2:
-    1. We are trying to edit the running program on the fly,
-  whereas CPR is not concerned with editing the program as it
-  is running.
-    2. We are writing the code with a framework (libaries)
-  that limit the interactions between modules; so that
-  defines inter-module interfaces (Python does this).
-    3. a) The run-time overhead and complexity of using CPR is
-  huge, but program (module) developer time imposed by it
-  is zero.
-       b) The run-time overhead of using small and/or negative
-  given the use of fast framework inter-module interfaces,
-  but the users code is constrained by the framework; so
-  foresight is required when coding the programs.
-
-Two kinds of module unload: clean and dirty.
-  clean: makes it like it was before the module (and its dependencies) was
-    loaded.  Of course not exactly that, there will some state changes
-    in the process.
-  dirty: can't unload some module libraries, but framework and modules
-    pretends and removes the inter-module interfaces from the process.  As
-    with the dirty case there will some state changes in the process which
-    of the same as in the clean case.
-
-I need to see what python does to handle unloading leaky libraries...
-
+to version 3. 
 
 -->
 
@@ -152,7 +67,7 @@ C source files: lib/window.c lib/actions.c parse this file.
                       <object class="GtkImageMenuItem" id="newTab_item">
                         <property name="visible">1</property>
                         <property name="label" translatable="yes"
-                          >New Tab</property>
+                          >New Graph Tab</property>
                         <property name="action-name">app.newTab</property>
                       </object>
                     </child>
@@ -164,9 +79,19 @@ C source files: lib/window.c lib/actions.c parse this file.
                       </object>
                     </child>
 
-                    <!-- item --- NEW TAB -------------------------->
+                    <!-- item --- CLOSE TAB ------------------------->
                     <child>
-                      <object class="GtkImageMenuItem" id="cloaeWindow_item">
+                      <object class="GtkImageMenuItem" id="closeTab_item">
+                        <property name="visible">1</property>
+                        <property name="label" translatable="yes"
+                          >Close Graph Tab</property>
+                        <property name="action-name">app.closeTab</property>
+                      </object>
+                    </child>
+
+                    <!-- item --- CLOSE WINDOW ---------------------->
+                    <child>
+                      <object class="GtkImageMenuItem" id="closeWindow_item">
                         <property name="visible">1</property>
                         <property name="label" translatable="yes"
                           >Close Window</property>
@@ -219,6 +144,18 @@ C source files: lib/window.c lib/actions.c parse this file.
                         <property name="action-name">app.showHideButtonbar</property>
                       </object>
                     </child>
+
+                    <!-- item --- SHOW Tab BAR -------------------->
+                    <child>
+                      <object class="GtkCheckMenuItem" id="showHideTabbar_item">
+                        <property name="visible">1</property>
+                        <property name="active">true</property>
+                        <property name="label" translatable="yes"
+                          >Show Tab Bar</property>
+                        <property name="action-name">app.showHideTabbar</property>
+                      </object>
+                    </child>
+
                   </object>
                 </child>
               </object>
@@ -289,7 +226,7 @@ C source files: lib/window.c lib/actions.c parse this file.
                     <child>
                       <object class="GtkLabel">
                         <property name="name">buttonlabel</property>
-                        <property name="label">New Tab</property>
+                        <property name="label">New Graph Tab</property>
                       </object>
                     </child>
                   </object>

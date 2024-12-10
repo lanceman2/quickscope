@@ -11,11 +11,13 @@ struct QsWindow {
     // fuck GTK is doing.  We just do not trust it.  Too many bugs.
     bool menubar_showing;
     bool buttonbar_showing;
+    bool tabbar_showing;
     // gnore_showHide stops check_menu_item callback re-entrance.
     bool ignore_showHide;
 
     GtkCheckMenuItem *showHideMenubar_item;
     GtkCheckMenuItem *showHideButtonbar_item;
+    GtkCheckMenuItem *showHideTabbar_item;
 
     GtkWindow *gtkWindow;
     GtkNotebook *gtkNotebook;
@@ -75,17 +77,18 @@ static inline struct QsWindow *GetCurrentWindow(void) {
     return w;
 }
 
-
-void NewGraphTab_cb(void);
-
+// bit mask
+extern uint32_t mod_keys;
 
 
 ////////////////////////////////////////////////////////////
-// Some button or menu actions, or like callback shit.
+// Some callbacks.
 //
-void quit_cb(void);
-void showHideMenubar_cb(void);   // toggle between show and hide
-void showHideButtonbar_cb(void); // toggle between show and hide
-void newTab_cb(void);
-void newWindow_cb(void);
-void closeWindow_cb(void);
+extern void quit_cb(void);
+extern void showHideMenubar_cb(void);   // toggle between show and hide
+extern void showHideButtonbar_cb(void); // toggle between show and hide
+extern void showHideTabbar_cb(void);    // toggle between show and hide
+extern void newTab_cb(void);
+extern void newWindow_cb(void);
+extern void closeTab_cb(void);
+extern void closeWindow_cb(void);
