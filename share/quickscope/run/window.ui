@@ -137,6 +137,17 @@ C source files: lib/window.c lib/actions.c parse this file.
 
                   <object class="GtkMenu">
 
+                    <!-- item --- NEW MAIN WINDOW ------------------->
+                    <child>
+                      <object class="GtkImageMenuItem" id="newMainWindow_item">
+                        <property name="visible">1</property>
+                        <property name="label" translatable="yes"
+                          >New Main Window</property>
+                        <property name="action-name">app.newMainWindow</property>
+                      </object>
+                    </child>
+
+
                     <!-- item --- NEW TAB -------------------------->
                     <child>
                       <object class="GtkImageMenuItem" id="newTab_item">
@@ -180,23 +191,23 @@ C source files: lib/window.c lib/actions.c parse this file.
 
                     <!-- item --- SHOW MENU ----------------------->
                     <child>
-                      <object class="GtkCheckMenuItem" id="showMenubar_item">
+                      <object class="GtkCheckMenuItem" id="showHideMenubar_item">
                         <property name="visible">1</property>
                         <property name="active">true</property>
                         <property name="label" translatable="yes"
                           >Show Menu</property>
-                        <property name="action-name">app.showMenubar</property>
+                        <property name="action-name">app.showHideMenubar</property>
                       </object>
                     </child>
 
                     <!-- item --- SHOW BUTTON BAR ---------------->
                     <child>
-                      <object class="GtkCheckMenuItem" id="showButtonbar_item">
+                      <object class="GtkCheckMenuItem" id="showHideButtonbar_item">
                         <property name="visible">1</property>
                         <property name="active">true</property>
                         <property name="label" translatable="yes"
                           >Show Button Bar</property>
-                        <property name="action-name">app.showButtonbar</property>
+                        <property name="action-name">app.showHideButtonbar</property>
                       </object>
                     </child>
                   </object>

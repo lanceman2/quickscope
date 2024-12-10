@@ -14,8 +14,8 @@ struct QsWindow {
     // gnore_showHide stops check_menu_item callback re-entrance.
     bool ignore_showHide;
 
-    GtkCheckMenuItem *showMenubar_item;
-    GtkCheckMenuItem *showButtonbar_item;
+    GtkCheckMenuItem *showHideMenubar_item;
+    GtkCheckMenuItem *showHideButtonbar_item;
 
     GtkWindow *gtkWindow;
     GtkNotebook *gtkNotebook;
@@ -52,7 +52,6 @@ extern uint32_t windowCount;
 
 extern void AddActions(struct QsWindow *w, GtkBuilder *builder);
 extern void FreeActions(struct QsWindow *window);
-extern void FreeAccelGroup(void);
 
 extern bool looping;
 
@@ -79,3 +78,13 @@ static inline struct QsWindow *GetCurrentWindow(void) {
 
 void NewGraphTab_cb(void);
 
+
+
+////////////////////////////////////////////////////////////
+// Some button or menu actions, or like callback shit.
+//
+void quit_cb(void);
+void showHideMenubar_cb(void);   // toggle between show and hide
+void showHideButtonbar_cb(void); // toggle between show and hide
+void newTab_cb(void);
+void newMainWindow_cb(void);

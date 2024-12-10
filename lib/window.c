@@ -28,6 +28,47 @@ static void DestroyWindow_cb(GtkWindow *gtkWindow, struct QsWindow *w) {
     --windowCount;
 }
 
+static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
+        struct QsWindow *win) {
+    // This is something that you can no longer do (at least easily) in
+    // GTK4; that is override action group events.  GtkWindow has no
+    // key-press-event signal/callback shit in GTK4.  They seemed to
+    // replace it with gestures, making you write 10 times more code;
+    // and near impossible to follow the code.
+    DASSERT(widget);
+    DASSERT(GTK_WINDOW(widget) == win->gtkWindow);
+    DASSERT(e);
+
+    // Ya! This fucking works.  I can grab event before the GAction
+    // bullshit fucks it up.
+
+    switch(e->key.keyval) {
+        case GDK_KEY_b:
+            showHideButtonbar_cb();
+            return TRUE;
+       case GDK_KEY_m:
+            showHideMenubar_cb();
+            return TRUE;
+        case GDK_KEY_n:
+            newMainWindow_cb();
+            return TRUE;
+        case GDK_KEY_q:
+            quit_cb();
+            return TRUE;
+        case GDK_KEY_t:
+            newTab_cb();
+            return TRUE;
+
+         default:
+            break;
+    }
+
+    /* return FALSE means the event is not handled; so it's propagated to
+     * child widgets. */
+    /* return TRUE means the event is handled; so it's not propagated*/
+    return FALSE;
+}
+
 
 static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
 
@@ -39,18 +80,18 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     w->gtkWindow = gtkWindow;
     w->gtkNotebook = GTK_NOTEBOOK(gtk_builder_get_object(builder, "notebook"));
     DASSERT(w->gtkNotebook);
+    gtk_widget_add_events(GTK_WIDGET(w->gtkWindow),
+            GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
 
     gtk_widget_show_all(GTK_WIDGET(gtkWindow));
-
-    //AddActions(w, builder);
-
-
 
     g_object_set_data(G_OBJECT(gtkWindow), "qsWindow", w);
     gtk_window_set_application(gtkWindow, app);
     gtk_window_set_title(gtkWindow, "Window");
     gtk_widget_show(GTK_WIDGET(gtkWindow));
     g_signal_connect(gtkWindow, "destroy", G_CALLBACK(DestroyWindow_cb), w);
+    g_signal_connect(gtkWindow, "key-press-event",
+            G_CALLBACK(keyPress_window_cb), w);
 
     AddActions(w, builder);
 
