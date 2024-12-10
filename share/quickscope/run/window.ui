@@ -137,16 +137,15 @@ C source files: lib/window.c lib/actions.c parse this file.
 
                   <object class="GtkMenu">
 
-                    <!-- item --- NEW MAIN WINDOW ------------------->
+                    <!-- item --- NEW WINDOW ----------------------->
                     <child>
-                      <object class="GtkImageMenuItem" id="newMainWindow_item">
+                      <object class="GtkImageMenuItem" id="newWindow_item">
                         <property name="visible">1</property>
                         <property name="label" translatable="yes"
-                          >New Main Window</property>
-                        <property name="action-name">app.newMainWindow</property>
+                          >New Window</property>
+                        <property name="action-name">app.newWindow</property>
                       </object>
                     </child>
-
 
                     <!-- item --- NEW TAB -------------------------->
                     <child>
@@ -162,6 +161,16 @@ C source files: lib/window.c lib/actions.c parse this file.
                     <child>
                       <object class="GtkSeparatorMenuItem">
                         <property name="visible">1</property>
+                      </object>
+                    </child>
+
+                    <!-- item --- NEW TAB -------------------------->
+                    <child>
+                      <object class="GtkImageMenuItem" id="cloaeWindow_item">
+                        <property name="visible">1</property>
+                        <property name="label" translatable="yes"
+                          >Close Window</property>
+                        <property name="action-name">app.closeWindow</property>
                       </object>
                     </child>
 
@@ -229,14 +238,14 @@ C source files: lib/window.c lib/actions.c parse this file.
         <child>
           <object class="GtkBox" id="buttonbar">
 
-            <!-- button --- NEW MAIN WINDOW ----------------------->
+            <!-- button --- NEW WINDOW ---------------------------->
             <child>
               <object class="GtkButton">
-                <property name="action-name">app.newMainWindow</property>
+                <property name="action-name">app.newWindow</property>
                 <child>
                   <object class="GtkBox">
                     <property name="tooltip-text" translatable="yes"
-                      >Create A New Main Window</property>
+                      >Create A New Window</property>
                     <property name="orientation">vertical</property>
                     <property name="spacing">6</property>
                     <child>

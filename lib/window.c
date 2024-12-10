@@ -10,6 +10,7 @@
 #include "app.h"
 #include "graph.h"
 
+#include "accel_keys.h"
 
 
 static void DestroyWindow_cb(GtkWindow *gtkWindow, struct QsWindow *w) {
@@ -39,23 +40,26 @@ static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
     DASSERT(GTK_WINDOW(widget) == win->gtkWindow);
     DASSERT(e);
 
-    // Ya! This fucking works.  I can grab event before the GAction
-    // bullshit fucks it up.
+    // Ya! This fucking works.  I can grab events before the GAction
+    // bullshit fucks it up.  GTK4 can't do it this way, if at all.
 
     switch(e->key.keyval) {
-        case GDK_KEY_b:
+        case ShowHideButtonbar_key:
             showHideButtonbar_cb();
             return TRUE;
-       case GDK_KEY_m:
+        case CloseWindow_key:
+            closeWindow_cb();
+            return TRUE;
+        case ShowHideMenubar_key:
             showHideMenubar_cb();
             return TRUE;
-        case GDK_KEY_n:
-            newMainWindow_cb();
+        case NewWindow_key:
+            newWindow_cb();
             return TRUE;
-        case GDK_KEY_q:
+        case Quit_key:
             quit_cb();
             return TRUE;
-        case GDK_KEY_t:
+        case NewTab_key:
             newTab_cb();
             return TRUE;
 
@@ -146,8 +150,6 @@ struct QsWindow *qsWindow_create(void) {
 
 
 void qsWindow_destroy(struct QsWindow *w) {
-
-    ASSERT(0, "This is never called");
 
     DASSERT(w);
     DASSERT(w->gtkWindow);

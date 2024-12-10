@@ -15,6 +15,7 @@ libquickscope.so_SOURCES :=\
  tabMenu.c\
  graph.c\
  actions.c\
+ callbacks.c\
  commonGtkCallbacks.c
 libquickscope.so_CPPFLAGS :=\
  $(GTK_CFLAGS)\

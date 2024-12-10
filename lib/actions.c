@@ -10,6 +10,8 @@
 #include "app.h"
 #include "graph.h"
 
+#include "accel_keys.h"
+
 
 // We tried to use actions as they are intended to be used, but they are
 // much to constraining for what we need in quickscope.  Actions is even
@@ -35,72 +37,6 @@
 //GtkAccelGroup *accel_group = 0;
 
 
-void quit_cb(void) {
-    qsApp_destroy();
-}
-
-// All the show/hide widget things will have a check_menu_item that we
-// wish to keep consistent with whither the widget is showing or hiding.
-// The thing that causes the widget to show or hide can vary.  GTK did
-// not provide the flexibility we needed, so ya, this shit happened.
-//
-static inline void FlipShowHide(struct QsWindow *win,
-            GtkWidget *w, GtkCheckMenuItem *item,
-            bool *showing) {
-    DASSERT(win);
-    DASSERT(w);
-    DASSERT(item);
-
-    // Stop re-entrance.
-    if(win->ignore_showHide) return;
-    win->ignore_showHide = true;
-
-    // Flip the state:
-    if((*showing)) *showing = false;
-    else *showing = true;
-
-
-    if((*showing)) {
-        // We want check_menu_item and widget showing.
-        if(!gtk_check_menu_item_get_active(item))
-            // This could cause a re-enter to this function.
-            gtk_check_menu_item_set_active(item, TRUE);
-        if(!gtk_widget_is_visible(w))
-            gtk_widget_show(w);
-    } else {
-        // We want check_menu_item and widget hidden.
-        if(gtk_check_menu_item_get_active(item))
-            // This could cause a re-enter to this function.
-            gtk_check_menu_item_set_active(item, FALSE);
-        if(gtk_widget_is_visible(w))
-            gtk_widget_hide(w);
-    }
-
-    win->ignore_showHide = false;
-}
-
-void showHideMenubar_cb(void) {
-
-    struct QsWindow *win = GetCurrentWindow();
-    FlipShowHide(win, win->menubar, win->showHideMenubar_item,
-            &win->menubar_showing);
-}
-
-void showHideButtonbar_cb(void) {
-
-    struct QsWindow *win = GetCurrentWindow();
-    FlipShowHide(win, win->buttonbar, win->showHideButtonbar_item,
-            &win->buttonbar_showing);
-}
-
-void newTab_cb(void) {
-    AddNewGraph(GetCurrentWindow(), 0);
-}
-
-void newMainWindow_cb(void) {
-    qsWindow_create();
-}
-
 // activate_*() gets called from the GActionGroup stuff.
 static void
 activate_quit(GSimpleAction *action, GVariant *parameter,
@@ -123,21 +59,28 @@ activate_newTab(GSimpleAction *action, GVariant *parameter,
     newTab_cb();
 }
 static void
-activate_newMainWindow(GSimpleAction *action, GVariant *parameter,
+activate_newWindow(GSimpleAction *action, GVariant *parameter,
         void *user_data) {
-    newMainWindow_cb();
+    newWindow_cb();
+}
+static void
+activate_closeWindow(GSimpleAction *action, GVariant *parameter,
+        void *user_data) {
+    closeWindow_cb();
 }
 
 
 // The stupid GActionEntry interface does not let us pass a fucking
-// pointer, so this is functions calling the "real" functions:
+// pointer, so this is functions calling the other functions, or
+// we could have made another stupid-ass mapping data structure.
 //
 static GActionEntry entries[] = {
   { "quit",              activate_quit },
   { "showHideMenubar",   activate_showHideMenubar},
   { "showHideButtonbar", activate_showHideButtonbar },
   { "newTab",            activate_newTab },
-  { "newMainWindow",     activate_newMainWindow }
+  { "newWindow",     activate_newWindow },
+  { "closeWindow",     activate_closeWindow }
 };
 
 
@@ -175,7 +118,7 @@ void AddActions(struct QsWindow *win, GtkBuilder *builder) {
     DSPEW();
     win->actions = (GActionGroup*) g_simple_action_group_new();
     DASSERT(win->actions);
-        
+
     win->accel_group = gtk_accel_group_new();
     DASSERT(win->accel_group);
 
@@ -192,14 +135,16 @@ void AddActions(struct QsWindow *win, GtkBuilder *builder) {
     gtk_widget_insert_action_group(GTK_WIDGET(win->gtkWindow), "app",
             win->actions);
     gtk_window_add_accel_group(GTK_WINDOW(win->gtkWindow), win->accel_group);
-    AddAccelerator(win, builder, "quit_item", GDK_KEY_q);
     win->showHideMenubar_item = GTK_CHECK_MENU_ITEM(AddAccelerator(win, builder,
-          "showHideMenubar_item", GDK_KEY_m));
+          "showHideMenubar_item", ShowHideMenubar_key));
     win->showHideButtonbar_item = GTK_CHECK_MENU_ITEM(AddAccelerator(win, builder,
-          "showHideButtonbar_item", GDK_KEY_b));
+          "showHideButtonbar_item", ShowHideButtonbar_key));
 
-    AddAccelerator(win, builder, "newMainWindow_item", GDK_KEY_n);
-    AddAccelerator(win, builder, "newTab_item", GDK_KEY_t);
+    AddAccelerator(win, builder, "newWindow_item", NewWindow_key);
+    AddAccelerator(win, builder, "newTab_item", NewTab_key);
+    AddAccelerator(win, builder, "cloaeWindow_item", CloseWindow_key);
+    AddAccelerator(win, builder, "quit_item", Quit_key);
+
 
     win->menubar_showing = true;
     win->buttonbar_showing = true;

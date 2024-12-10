@@ -87,4 +87,5 @@ void quit_cb(void);
 void showHideMenubar_cb(void);   // toggle between show and hide
 void showHideButtonbar_cb(void); // toggle between show and hide
 void newTab_cb(void);
-void newMainWindow_cb(void);
+void newWindow_cb(void);
+void closeWindow_cb(void);
