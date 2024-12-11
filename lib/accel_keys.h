@@ -12,10 +12,11 @@
 #define MOD_SHIFT                   01   
 
 
-
 #define ShowHideMenubar_key         GDK_KEY_m
 #define ShowHideTabbar_key          GDK_KEY_t
 #define ShowHideButtonbar_key       GDK_KEY_b
+#define ShowHideStatusbar_key       GDK_KEY_s
+#define ShowHideControlbar_key      GDK_KEY_c
 #define NewTab_key                  GDK_KEY_g
 #define CloseTab_key                GDK_KEY_g // with MOD_SHIFT
 #define NewWindow_key               GDK_KEY_w

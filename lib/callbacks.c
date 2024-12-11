@@ -97,6 +97,22 @@ void showHideButtonbar_cb(void) {
             &win->buttonbar_showing, 0, 0);
 }
 
+void showHideControlbar_cb(void) {
+
+    struct QsWindow *win = GetCurrentWindow();
+    struct QsGraph *g = GetCurrentGraph();
+    FlipShowHide(win, g->controlbar, win->showHideControlbar_item,
+            &g->controlbar_showing, 0, 0);
+}
+
+void showHideStatusbar_cb(void) {
+
+    struct QsWindow *win = GetCurrentWindow();
+    struct QsGraph *g = GetCurrentGraph();
+    FlipShowHide(win, GTK_WIDGET(g->statusbar), win->showHideStatusbar_item,
+            &g->statusbar_showing, 0, 0);
+}
+
 static void ShowTabbar(GtkWidget *w) {
   DASSERT(w);
   gtk_notebook_set_show_tabs(GTK_NOTEBOOK(w), TRUE);

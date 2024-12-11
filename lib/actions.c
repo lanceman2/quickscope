@@ -40,11 +40,6 @@
 // activate_*() gets called from the GActionGroup stuff.
 
 static void
-activate_quit(GSimpleAction *action, GVariant *parameter,
-        void *user_data) {
-    quit_cb();
-}
-static void
 activate_showHideMenubar(GSimpleAction *action, GVariant *parameter,
         void *user_data) {
     showHideMenubar_cb();
@@ -58,6 +53,16 @@ static void
 activate_showHideTabbar(GSimpleAction *action, GVariant *parameter,
         void *user_data) {
     showHideTabbar_cb();
+}
+static void
+activate_showHideControlbar(GSimpleAction *action, GVariant *parameter,
+        void *user_data) {
+    showHideControlbar_cb();
+}
+static void
+activate_showHideStatusbar(GSimpleAction *action, GVariant *parameter,
+        void *user_data) {
+    showHideStatusbar_cb();
 }
 static void
 activate_newTab(GSimpleAction *action, GVariant *parameter,
@@ -79,6 +84,11 @@ activate_closeTab(GSimpleAction *action, GVariant *parameter,
         void *user_data) {
     closeTab_cb();
 }
+static void
+activate_quit(GSimpleAction *action, GVariant *parameter,
+        void *user_data) {
+    quit_cb();
+}
 
 
 // The stupid GActionEntry interface does not let us pass a fucking
@@ -86,14 +96,16 @@ activate_closeTab(GSimpleAction *action, GVariant *parameter,
 // we could have made another stupid-ass mapping data structure.
 //
 static GActionEntry entries[] = {
-  { "quit",              activate_quit },
-  { "showHideMenubar",   activate_showHideMenubar},
-  { "showHideButtonbar", activate_showHideButtonbar },
-  { "showHideTabbar",    activate_showHideTabbar },
-  { "newTab",            activate_newTab },
-  { "newWindow",         activate_newWindow },
-  { "closeTab",          activate_closeTab },
-  { "closeWindow",       activate_closeWindow }
+  { "showHideMenubar",    activate_showHideMenubar},
+  { "showHideButtonbar",  activate_showHideButtonbar },
+  { "showHideTabbar",     activate_showHideTabbar },
+  { "showHideControlbar", activate_showHideControlbar },
+  { "showHideStatusbar",  activate_showHideStatusbar },
+  { "newTab",             activate_newTab },
+  { "newWindow",          activate_newWindow },
+  { "closeTab",           activate_closeTab },
+  { "closeWindow",        activate_closeWindow },
+  { "quit",               activate_quit }
 };
 
 
@@ -155,6 +167,10 @@ void AddActions(struct QsWindow *win, GtkBuilder *builder) {
           "showHideButtonbar_item", ShowHideButtonbar_key, 0));
     win->showHideTabbar_item = GTK_CHECK_MENU_ITEM(AddAccelerator(win, builder,
           "showHideTabbar_item", ShowHideTabbar_key, 0));
+    win->showHideControlbar_item = GTK_CHECK_MENU_ITEM(AddAccelerator(win, builder,
+          "showHideControlbar_item", ShowHideControlbar_key, 0));
+    win->showHideStatusbar_item = GTK_CHECK_MENU_ITEM(AddAccelerator(win, builder,
+          "showHideStatusbar_item", ShowHideStatusbar_key, 0));
 
     AddAccelerator(win, builder, "newWindow_item", NewWindow_key, 0);
     AddAccelerator(win, builder, "newTab_item", NewTab_key, 0);

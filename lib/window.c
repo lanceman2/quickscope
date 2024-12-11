@@ -109,6 +109,43 @@ static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
     return FALSE;
 }
 
+static inline void 
+FixCheckMenu(struct QsWindow *win, GtkCheckMenuItem *item, bool showing) {
+
+    bool is_active = gtk_check_menu_item_get_active(item);
+    // Stop callback re-entrance:
+    win->ignore_showHide = true;
+
+    if(showing && !is_active)
+        gtk_check_menu_item_set_active(item, TRUE);
+    else if(!showing && is_active)
+        gtk_check_menu_item_set_active(item, FALSE);
+
+    win->ignore_showHide = false;
+}
+
+static gboolean notebookSwitchPage_cb(GtkNotebook *notebook,
+        GtkWidget* vbox, int page_num, struct QsWindow *win) {
+    // Looks like this is called before 
+    // gtk_notebook_get_current_page() will return this page_num.
+    DASSERT(notebook);
+    DASSERT(win);
+    DASSERT(notebook == win->gtkNotebook);
+    struct QsGraph *g = g_object_get_data(G_OBJECT(vbox), "qsGraph");
+    DASSERT(g);
+    DASSERT(g->vbox == vbox);
+
+    // We can show and hide the control and status bars in the graph tab,
+    // but there is per window menu for that, so we need to check and fix
+    // the show/hide menu items in the main menu bar to be the same as the
+    // show/hide state of the graph tab that we just switched to.
+    //
+    FixCheckMenu(win, win->showHideControlbar_item, g->controlbar_showing);
+    FixCheckMenu(win, win->showHideStatusbar_item, g->statusbar_showing);
+
+    return FALSE;
+}
+
 
 static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
 
@@ -120,6 +157,7 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     w->gtkWindow = gtkWindow;
     w->gtkNotebook = GTK_NOTEBOOK(gtk_builder_get_object(builder, "notebook"));
     DASSERT(w->gtkNotebook);
+
     gtk_widget_add_events(GTK_WIDGET(w->gtkWindow),
             GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
 
@@ -135,13 +173,15 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     g_signal_connect(gtkWindow, "key-release-event",
             G_CALLBACK(keyRelease_window_cb), w);
 
-
     AddActions(w, builder);
 
     g_object_unref(builder);
 
     // Add a new graph tab.
     AddNewGraph(w, 0);
+
+    g_signal_connect(w->gtkNotebook,"switch-page",
+            G_CALLBACK(notebookSwitchPage_cb), w);
 }
 
 

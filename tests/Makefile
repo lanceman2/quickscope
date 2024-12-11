@@ -24,6 +24,13 @@ malloc_no_free_CPPFLAGS := -DNO_FREE
 011_window_LDFLAGS := $(QS_LIB)
 
 
+gtkDrawingArea_SOURCES := gtkDrawingArea.c
+gtkDrawingArea_CPPFLAGS := $(GTK_CFLAGS)
+gtkDrawingArea_LDFLAGS := $(GTK_LDFLAGS)
+
+
+
+
 qsApp_run_SOURCES := qsApp_run.c
 qsApp_run_LDFLAGS := $(QS_LIB)
 qsApp_run_CPPFLAGS := $(QS_CFLAGS)

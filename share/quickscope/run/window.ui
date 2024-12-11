@@ -145,7 +145,7 @@ C source files: lib/window.c lib/actions.c parse this file.
                       </object>
                     </child>
 
-                    <!-- item --- SHOW Tab BAR -------------------->
+                    <!-- item --- SHOW TAB BAR -------------------->
                     <child>
                       <object class="GtkCheckMenuItem" id="showHideTabbar_item">
                         <property name="visible">1</property>
@@ -155,6 +155,29 @@ C source files: lib/window.c lib/actions.c parse this file.
                         <property name="action-name">app.showHideTabbar</property>
                       </object>
                     </child>
+
+                    <!-- item --- SHOW CONTROL BAR ----------------->
+                    <child>
+                      <object class="GtkCheckMenuItem" id="showHideControlbar_item">
+                        <property name="visible">1</property>
+                        <property name="active">true</property>
+                        <property name="label" translatable="yes"
+                          >Show Control Bar</property>
+                        <property name="action-name">app.showHideControlbar</property>
+                      </object>
+                    </child>
+
+                    <!-- item --- SHOW STATUS BAR ----------------->
+                    <child>
+                      <object class="GtkCheckMenuItem" id="showHideStatusbar_item">
+                        <property name="visible">1</property>
+                        <property name="active">true</property>
+                        <property name="label" translatable="yes"
+                          >Show Status Bar</property>
+                        <property name="action-name">app.showHideStatusbar</property>
+                      </object>
+                    </child>
+
 
                   </object>
                 </child>

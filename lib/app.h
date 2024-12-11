@@ -12,12 +12,20 @@ struct QsWindow {
     bool menubar_showing;
     bool buttonbar_showing;
     bool tabbar_showing;
-    // gnore_showHide stops check_menu_item callback re-entrance.
+
+    // gnore_showHide stops check_menu_item callback re-entrance that may
+    // or may not happen by calling gtk_check_menu_item_set_active() to
+    // change the check in the menu item.  Because we only get one
+    // (pointer and keyboard) focus we only need one flag for all
+    // GtkCheckMenuItem objects.  We can only effect them one at a time.
     bool ignore_showHide;
 
     GtkCheckMenuItem *showHideMenubar_item;
     GtkCheckMenuItem *showHideButtonbar_item;
     GtkCheckMenuItem *showHideTabbar_item;
+    GtkCheckMenuItem *showHideControlbar_item;
+    GtkCheckMenuItem *showHideStatusbar_item;
+
 
     GtkWindow *gtkWindow;
     GtkNotebook *gtkNotebook;
@@ -77,18 +85,21 @@ static inline struct QsWindow *GetCurrentWindow(void) {
     return w;
 }
 
-// bit mask
+
+// bit mask of modifier keys caught by the main window.
 extern uint32_t mod_keys;
 
 
 ////////////////////////////////////////////////////////////
 // Some callbacks.
 //
-extern void quit_cb(void);
 extern void showHideMenubar_cb(void);   // toggle between show and hide
 extern void showHideButtonbar_cb(void); // toggle between show and hide
 extern void showHideTabbar_cb(void);    // toggle between show and hide
+extern void showHideControlbar_cb(void);// toggle between show and hide
+extern void showHideStatusbar_cb(void); // toggle between show and hide
 extern void newTab_cb(void);
 extern void newWindow_cb(void);
 extern void closeTab_cb(void);
 extern void closeWindow_cb(void);
+extern void quit_cb(void);
