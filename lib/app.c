@@ -28,6 +28,8 @@ void Cleanup(void) {
     DASSERT(!looping);
     DASSERT(app);
 
+    CleanupCSS();
+
     //CleanupTabPopupMenu();
 
     // It looks like I need to destroy the main windows because destroying
@@ -68,6 +70,7 @@ static void startup_cb (GApplication *application) {
 void qsApp_create(int argc, char **argv, GtkApplication *a) {
 
     DSPEW();
+
 
     // TODO: Maybe do nothing but parse args if there are any.
     // Or maybe it's best to not allow a useless case:

@@ -1,3 +1,4 @@
+#include "../lib/debug.h"
 
 #include <gtk/gtk.h>
 
@@ -43,6 +44,8 @@ scribble_draw (GtkWidget *widget,
 {
   cairo_set_source_surface (cr, surface, 0, 0);
   cairo_paint (cr);
+  // There's lots of needless draw calls.  Looks like a GTK3 bug to me.
+DSPEW();
 
   return FALSE;
 }

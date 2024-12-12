@@ -77,6 +77,7 @@ static int dl_callback(struct dl_phdr_info *info,
         // If some code tries to change it, at least they get a compile
         // error.
         qsResourceDir = (const char *) s;
+        DASSERT(qsResourceDir);
         return 1; // done
     }
 

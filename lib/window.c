@@ -151,6 +151,8 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
 
     DASSERT(gApp == app);
 
+    AddCSS();
+
     GtkBuilder *builder = Get_builder_from_file("window.ui");
 
     GtkWindow *gtkWindow = GTK_WINDOW(gtk_builder_get_object(builder, "window"));
@@ -160,6 +162,15 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
 
     gtk_widget_add_events(GTK_WIDGET(w->gtkWindow),
             GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
+
+    // The XML GTK .ui file parsing of markup is broken, so we set these
+    // two labels here.
+    GtkLabel *l = GTK_LABEL(gtk_builder_get_object(builder, "newWindow_label"));
+    DASSERT(l);
+    gtk_label_set_markup(l, "New <u>W</u>indow");
+    l = GTK_LABEL(gtk_builder_get_object(builder, "newTab_label"));
+    DASSERT(l);
+    gtk_label_set_markup(l, "New <u>G</u>raph Tab");
 
     gtk_widget_show_all(GTK_WIDGET(gtkWindow));
 

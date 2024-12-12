@@ -24,7 +24,7 @@ malloc_no_free_CPPFLAGS := -DNO_FREE
 011_window_LDFLAGS := $(QS_LIB)
 
 
-gtkDrawingArea_SOURCES := gtkDrawingArea.c
+gtkDrawingArea_SOURCES := gtkDrawingArea.c ../lib/debug.c
 gtkDrawingArea_CPPFLAGS := $(GTK_CFLAGS)
 gtkDrawingArea_LDFLAGS := $(GTK_LDFLAGS)
 

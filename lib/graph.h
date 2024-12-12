@@ -13,6 +13,10 @@ struct QsGraph {
 
     bool controlbar_showing;
     bool statusbar_showing;
+
+    // I get a lot of unnecessary draw requires.  We reset drawCount to 0
+    // in the drawingArea_configure_cb().
+    uint32_t drawCount;
 };
 
 

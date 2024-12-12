@@ -55,17 +55,24 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
         cairo_surface_destroy(g->bgSurface);
 
     g->bgSurface = gdk_window_create_similar_surface(
-            gtk_widget_get_window(w), CAIRO_CONTENT_COLOR,
+            gtk_widget_get_window(w),
+            // I tried using CAIRO_CONTENT_COLOR_ALPHA and it's buggy as
+            // fuck.  Looks like the GNOME compositor is buggy as fuck.
+            //CAIRO_CONTENT_COLOR_ALPHA,
+            CAIRO_CONTENT_COLOR,
             a.width, a.height);
     DASSERT(g->bgSurface);
 
     cairo_t *cr = cairo_create(g->bgSurface);
-    cairo_set_source_rgb(cr, 0, 0, 1);
+    cairo_set_source_rgba(cr, 0, 1, 1, 0);
     cairo_paint(cr);
     cairo_destroy(cr);
 
+    g->drawCount = 0;
+
     return TRUE; // TRUE == done processing event
 }
+
 
 static gboolean drawingArea_draw_cb(GtkWidget *w,
         cairo_t *cr, struct QsGraph *g) {
@@ -75,8 +82,13 @@ static gboolean drawingArea_draw_cb(GtkWidget *w,
     DASSERT(g->bgSurface);
     DASSERT(w == GTK_WIDGET(g->drawingArea));
 
-    //DSPEW();
+    DSPEW();
 
+    if(g->drawCount)
+        // Calling draw for go good reason:
+        return;
+
+    ++g->drawCount;
 
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     cairo_set_source_surface(cr, g->bgSurface, 0, 0);
@@ -95,6 +107,7 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0/*spacing*/);
     g_signal_connect(vbox, "destroy", G_CALLBACK(Destroy_cb), g);
+    gtk_widget_set_name(vbox, "vbox");
 
     GtkWidget *drawingArea = gtk_drawing_area_new();
     DASSERT(drawingArea);

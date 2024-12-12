@@ -16,7 +16,8 @@ libquickscope.so_SOURCES :=\
  graph.c\
  actions.c\
  callbacks.c\
- commonGtkCallbacks.c
+ commonGtkCallbacks.c\
+ cssStyle.c
 libquickscope.so_CPPFLAGS :=\
  $(GTK_CFLAGS)\
  -DQS_LIB_CODE
