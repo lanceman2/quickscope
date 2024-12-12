@@ -39,6 +39,30 @@ static void Destroy_cb(GtkWidget *widget, struct QsGraph *g) {
     free(g);
 }
 
+static inline void DrawVGrid(cairo_t *cr,
+        double lineWidth/*vertical line width in pixels*/, 
+        double pixelSpace/*minimum pixels between lines*/,
+        double xMin, double xMax/*plotted scaled user values at the edges*/,
+        int width, int height) {
+
+    DASSERT(lineWidth <= pixelSpace);
+    DASSERT(width >= 1);
+    DASSERT(height >= 1);
+
+    cairo_set_line_width(cr, lineWidth);
+
+    double start = 0, delta = pixelSpace, end = width + lineWidth;
+
+
+    int i = 0;
+
+    for(double x=start; x<=end; ++i, x=i*delta) {
+        cairo_move_to(cr, x, 0);
+        cairo_line_to(cr, x, height);
+        cairo_stroke(cr);
+    }
+}
+
 static gboolean drawingArea_configure_cb(GtkWidget *w,
         GdkEventConfigure *e, struct QsGraph *g) {
 
@@ -63,12 +87,18 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
             a.width, a.height);
     DASSERT(g->bgSurface);
 
-    cairo_t *cr = cairo_create(g->bgSurface);
-    cairo_set_source_rgba(cr, 0, 1, 1, 0);
-    cairo_paint(cr);
-    cairo_destroy(cr);
 
-    g->drawCount = 0;
+
+    cairo_t *cr = cairo_create(g->bgSurface);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_paint(cr);
+
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_rgb(cr, 1, 0, 0);
+    DrawVGrid(cr, 3.6, 100, 0, 1, a.width, a.height);
+
+    cairo_destroy(cr);
 
     return TRUE; // TRUE == done processing event
 }
@@ -82,13 +112,9 @@ static gboolean drawingArea_draw_cb(GtkWidget *w,
     DASSERT(g->bgSurface);
     DASSERT(w == GTK_WIDGET(g->drawingArea));
 
-    DSPEW();
+    // There seems to be far to many draw calls
+    //DSPEW();
 
-    if(g->drawCount)
-        // Calling draw for go good reason:
-        return;
-
-    ++g->drawCount;
 
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     cairo_set_source_surface(cr, g->bgSurface, 0, 0);
