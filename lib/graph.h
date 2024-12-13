@@ -1,4 +1,11 @@
 
+struct QsZoom {
+
+    struct QsZoom *prev, *next; // To keep a list of zooms
+
+    double xMin, xMax, xSlope/*=(xMax - xMin)/pixWidth*/;
+    double yMin, yMax, ySlope/*=(yMin - yMax)/pixHeight*/;
+};
 
 struct QsGraph {
 
@@ -11,12 +18,15 @@ struct QsGraph {
     GtkWidget *controlbar; // gtk entry widget
     GtkStatusbar *statusbar;
 
+    double xMin, xMax, yMin, yMax;
+
+    int width, height; // drawing area in pixels
+
+    struct QsZoom *top;  // first zoom level
+    struct QsZoom *zoom; // current zoom level
+
     bool controlbar_showing;
     bool statusbar_showing;
-
-    // I get a lot of unnecessary draw requires.  We reset drawCount to 0
-    // in the drawingArea_configure_cb().
-    uint32_t drawCount;
 };
 
 
