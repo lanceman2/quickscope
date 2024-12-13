@@ -1,6 +1,10 @@
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <inttypes.h>
+#include <float.h>
+#include <math.h>
 
 #include <gtk/gtk.h>
 
@@ -169,6 +173,83 @@ static inline void FixZooms(struct QsGraph *g, int width, int height) {
     DASSERT(g->zoom);
 }
 
+static inline double Trim(double x) {
+
+    // TODO: This could be rewritten by using an understanding of floating
+    // point representation.  In this writing we did not even try to
+    // understand how floating point numbers are stored, we just used math
+    // functions that do the right thing.
+
+    ASSERT(x > 0.0);
+    ASSERT(isnormal(x));
+    ASSERT(x < DBL_MAX/8.0); // max is about 1.0e308
+
+    double pow = log10(x);
+    // x = 10^pow
+    int32_t p;
+    if(pow > 0.0)
+        p = (pow + 0.5);
+    else
+        p = (pow - 0.5);
+    // x ~= 10^p  example if pow ==  1.3  p = 1
+    //                    if pow == -1.3  p = -1
+    double tenPow = exp10((double) p);
+    // I'm not sure how the mantissa is defined, but I don't care.  I just
+    // have that:  
+    //
+    //       x = mant * 10 ^ p  [very close]
+    //
+    double mant = x/tenPow;
+
+    while(mant < 1.0) {
+        mant *= 10.0;
+        --p;
+    }
+
+    // Ya, it better be that this is so:
+    DASSERT(x < 1.000001 * mant * exp10(p));
+    DASSERT(x > 0.999999 * mant * exp10(p));
+
+    //DSPEW("x = %lg = %lf * 10 ^(%d)", x, mant, p);
+
+    // Now trim digits off of mant.  Like for example:
+    //
+    //    1.1234 => 2.0   or  4.6234 => 5.0
+
+    uint32_t ix = (uint32_t) mant;
+
+
+    // We make it larger, not smaller.  Just certain values look good in
+    // plot grid lines.
+    //
+    switch(ix) {
+        case 9:
+        case 8:
+        case 7:
+        case 6:
+        case 5:
+            ix = 10;
+            break;
+        case 4:
+        case 3:
+        case 2:
+            ix = 5;
+            break;
+        case 1:
+            ix = 2;
+            break;
+        case 0:
+            ASSERT(0, "Bad Code");
+            break;
+    }
+
+    x = ix * exp10(p);
+
+    DSPEW("x = %lg <= %" PRIu32" * 10 ^(%d)", x, ix, p);
+
+    return x;
+}
+
 
 static inline void DrawVGrid(cairo_t *cr,
         double lineWidth/*vertical line width in pixels*/, 
@@ -179,7 +260,13 @@ static inline void DrawVGrid(cairo_t *cr,
     ASSERT(z->xMin < z->xMax, "%lg < %lg", z->xMin, z->xMax);
 
     double deltaX = (z->xMax - z->xMin) * pixelSpace/width;
+    deltaX = Trim(deltaX);
+
+    DSPEW("V grid spacing is %lg pixels (> %lg)",
+            deltaX * width /  (z->xMax - z->xMin), pixelSpace);
+
     double start = pixToX(0, z);
+
     double end = pixToX(width, z) + deltaX;
     int i = 0;
 
@@ -226,7 +313,7 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
     cairo_paint(cr);
 
     cairo_set_source_rgb(cr, 1, 0, 0);
-    DrawVGrid(cr, 3.6, 100, g->zoom, g->width, g->height);
+    DrawVGrid(cr, 0.7, 30, g->zoom, g->width, g->height);
 
     cairo_destroy(cr);
 
