@@ -16,7 +16,8 @@
 
 
 
-static inline double RoundUp(double x, uint32_t *subDivider) {
+static inline double RoundUp(double x, uint32_t *subDivider,
+                    int32_t *p_out) {
 
     // TODO: This could be rewritten by using an understanding of floating
     // point representation.  In this writing we did not even try to
@@ -90,6 +91,7 @@ static inline double RoundUp(double x, uint32_t *subDivider) {
     //DSPEW("x = %lg <= %" PRIu32" * 10 ^(%d)", x, ix, p);
 
     *subDivider = ix;
+    *p_out = p;
 
     return x;
 }
@@ -130,13 +132,13 @@ static inline double GetVGrid(cairo_t *cr,
         double pixelSpace/*minimum pixels between lines*/,
         struct QsZoom *z, double width, double height,
         double fontSize, double *start_out,
-        uint32_t *subDivider) {
+        uint32_t *subDivider, int32_t *pow) {
 
     DASSERT(lineWidth <= pixelSpace);
     ASSERT(z->xMin < z->xMax, "%lg < %lg", z->xMin, z->xMax);
 
     double delta = (z->xMax - z->xMin) * pixelSpace/width;
-    delta = RoundUp(delta, subDivider);
+    delta = RoundUp(delta, subDivider, pow);
 
     //DSPEW("V grid spacing is %lg pixels (> %lg)",
     //        delta * width /  (z->xMax - z->xMin), pixelSpace);
@@ -164,13 +166,13 @@ static inline double GetHGrid(cairo_t *cr,
         double pixelSpace/*minimum pixels between lines*/,
         struct QsZoom *z, double width, double height,
         double fontSize, double *start_out,
-        uint32_t *subDivider) {
+        uint32_t *subDivider, int32_t *pow) {
 
     DASSERT(lineWidth <= pixelSpace);
     ASSERT(z->yMin < z->yMax, "%lg < %lg", z->yMin, z->yMax);
 
     double delta = (z->yMax - z->yMin) * pixelSpace/height;
-    delta = RoundUp(delta, subDivider);
+    delta = RoundUp(delta, subDivider, pow);
 
     //DSPEW("H grid spacing is %lg pixels (> %lg)",
     //        delta * height /  (z->yMax - z->yMin), pixelSpace);
@@ -194,8 +196,41 @@ static inline double GetHGrid(cairo_t *cr,
 }
 
 
+static inline void StripZeros(char *label) {
+
+    char *s = label + strlen(label) - 1;
+    while(*s == '0' &&
+        (*(s-1) >= '0' && *(s-1) <= '9')/*next is a 0 to 9 digit*/) {
+        *s = '\0';
+        --s;
+    }
+}
+
+
+static inline void GetLabel(char *label, size_t LEN,
+        double x, double exp10pow, int32_t pow) {
+
+    //snprintf(label, LEN, "%1.1e", x);
+
+    if(pow >= -1 && pow <= 4) {
+        snprintf(label, LEN, "%3.4f", x);
+        // Remove trailing zeros.
+        StripZeros(label);
+        return;
+    }
+
+    snprintf(label, LEN, "%4.4f", x/exp10pow);
+    StripZeros(label);
+    size_t l = strlen(label);
+    if(!strcmp(label, "0.0"))
+        // 0.0 is special
+        return;
+    snprintf(label+l, LEN-l, "e%+d", pow);
+}
+
+
 #if 1
-#  define GetFormat(X)  "%1.1g"
+#  define GetFormat(X)  "%1.1e"
 
 #else
 static inline char *GetFormat(double x) {
@@ -231,7 +266,7 @@ static inline void DrawVGridLabels(cairo_t *cr,
         double lineWidth/*vertical line width in pixels*/, 
         struct QsZoom *z, double width, double height,
         double fontSize, double start,
-        double delta) {
+        double delta, int32_t pow) {
 
     double end = pixToX(width, z) + delta;
 
@@ -243,6 +278,9 @@ static inline void DrawVGridLabels(cairo_t *cr,
 
     lineWidth *= 0.8;
 
+    ++pow;
+    double exp10pow = exp10(pow);
+
     for(double x = start; x <= end; x += delta) {
 
         if(fabs(x) < delta/100)
@@ -252,7 +290,7 @@ static inline void DrawVGridLabels(cairo_t *cr,
             x = 0.0;
 
         double pix = xToPix(x, z);
-        snprintf(label, T_SIZE, GetFormat(x), x);
+        GetLabel(label, T_SIZE, x, exp10pow, pow);
         cairo_move_to(cr, pix + lineWidth, textY);
         cairo_show_text(cr, label);
     }
@@ -285,7 +323,7 @@ static inline void DrawHGridLabels(cairo_t *cr,
         double lineWidth/*vertical line width in pixels*/, 
         struct QsZoom *z, double width, double height,
         double fontSize, double start,
-        double delta) {
+        double delta, int32_t pow) {
 
     double end = pixToY(0, z) + delta;
 
@@ -296,6 +334,9 @@ static inline void DrawHGridLabels(cairo_t *cr,
 
     lineWidth *= 0.8;
 
+    ++pow;
+    double exp10pow = exp10(pow);
+
     for(double y = start; y <= end; y += delta) {
 
         if(fabs(y) < delta/100)
@@ -305,7 +346,7 @@ static inline void DrawHGridLabels(cairo_t *cr,
             y = 0.0;
 
         double pix = yToPix(y, z);
-        snprintf(label, T_SIZE, GetFormat(y), y);
+        GetLabel(label, T_SIZE, y, exp10pow, pow);
         cairo_move_to(cr, textX, pix - lineWidth - 1);
         cairo_show_text(cr, label);
     }
@@ -322,14 +363,15 @@ void DrawGrids(struct QsGraph *g, cairo_t *cr, bool show_subGrid) {
     double startX, deltaX, startY, deltaY;
     uint32_t subDividerX, subDividerY;
     double lineWidth = 5.7;
+    int32_t powX, powY;
 
     deltaX = GetVGrid(cr, lineWidth, 140, g->zoom,
             g->width, g->height, fontSize, &startX,
-            &subDividerX);
+            &subDividerX, &powX);
 
     deltaY = GetHGrid(cr, lineWidth, 140, g->zoom,
             g->width, g->height, fontSize, &startY,
-            &subDividerY);
+            &subDividerY, &powY);
 
 
     if(!show_subGrid)
@@ -412,7 +454,7 @@ drawGrid:
             g->axesLabelColor.r, g->axesLabelColor.g,
             g->axesLabelColor.b);
     DrawVGridLabels(cr, lineWidth, g->zoom, g->width, g->height,
-            fontSize, startX, deltaX);
+            fontSize, startX, deltaX, powX);
     DrawHGridLabels(cr, lineWidth, g->zoom, g->width, g->height,
-            fontSize, startY, deltaY);
+            fontSize, startY, deltaY, powY);
 }

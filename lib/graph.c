@@ -267,10 +267,10 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
     // TODO: Find the extreme values that may be plotted.
     //
     // Setup graph/plot scale to start with:
-    g->xMin = -2.24e-6;
-    g->xMax = 1.3e-6;
-    g->yMin = 0;
-    g->yMax = 1;
+    g->xMin = -2.24e5;
+    g->xMax = 1.3e+5;
+    g->yMin = -2.0e-1;
+    g->yMax = 1.0e-1;
 
     // set default colors
     SetColor(&g->bgColor, 0, 0, 0);
