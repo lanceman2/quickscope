@@ -7,6 +7,11 @@ struct QsZoom {
     double yMin, yMax, ySlope/*=(yMin - yMax)/pixHeight*/;
 };
 
+struct QsColor {
+
+  double r, g, b;
+};
+
 struct QsGraph {
 
     GtkWidget *tab;
@@ -24,6 +29,8 @@ struct QsGraph {
 
     struct QsZoom *top;  // first zoom level
     struct QsZoom *zoom; // current zoom level
+
+    struct QsColor bgColor, gridColor, subGridColor, axesLabelColor;
 
     bool controlbar_showing;
     bool statusbar_showing;
@@ -49,3 +56,29 @@ extern void ShowTabPopupMenu(struct QsGraph *g, int x, int y);
 extern void CreatePopoverMenu(void);
 extern void CleanupTabPopupMenu(void);
 
+static inline void SetColor(struct QsColor *c,
+    double r, double g, double b) {
+  c->r = r;
+  c->g = g;
+  c->b = b;
+}
+
+extern void DrawGrids(struct QsGraph *g, cairo_t *cr, bool show_subGrid);
+
+// TODO: Can we use SIMD parallel processing for all this arithmetic?
+
+static inline double xToPix(double x, struct QsZoom *z) {
+    return (x - z->xMin) / z->xSlope;
+}
+
+static inline double pixToX(double p, struct QsZoom *z) {
+    return p * z->xSlope + z->xMin;
+}
+
+static inline double yToPix(double y, struct QsZoom *z) {
+    return (y - z->yMax) / z->ySlope;
+}
+
+static inline double pixToY(double p, struct QsZoom *z) {
+    return p * z->ySlope + z->yMax;
+}

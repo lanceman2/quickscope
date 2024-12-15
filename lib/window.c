@@ -163,8 +163,8 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     gtk_widget_add_events(GTK_WIDGET(w->gtkWindow),
             GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
 
-    // The XML GTK .ui file parsing of markup is broken, so we set these
-    // two labels here.
+    // The XML GTK .ui file parsing of label markup is broken, so we set
+    // these two labels here.
     GtkLabel *l = GTK_LABEL(gtk_builder_get_object(builder, "newWindow_label"));
     DASSERT(l);
     gtk_label_set_markup(l, "New <u>W</u>indow");

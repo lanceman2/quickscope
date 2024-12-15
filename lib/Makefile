@@ -14,6 +14,7 @@ libquickscope.so_SOURCES :=\
  constructor.c\
  tabMenu.c\
  graph.c\
+ DrawGrids.c\
  actions.c\
  callbacks.c\
  commonGtkCallbacks.c\

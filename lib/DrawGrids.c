@@ -1,0 +1,418 @@
+#define _GNU_SOURCE
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <inttypes.h>
+#include <float.h>
+#include <math.h>
+
+#include <gtk/gtk.h>
+
+#include "../include/quickscope.h"
+
+#include "debug.h"
+#include "app.h"
+#include "graph.h"
+
+
+
+static inline double RoundUp(double x, uint32_t *subDivider) {
+
+    // TODO: This could be rewritten by using an understanding of floating
+    // point representation.  In this writing we did not even try to
+    // understand how floating point numbers are stored, we just used math
+    // functions that do the right thing.
+
+    ASSERT(x > 0.0);
+    ASSERT(isnormal(x));
+    ASSERT(x < DBL_MAX/8.0); // max is about 1.0e308
+
+    double pow = log10(x);
+    // x = 10^pow
+    int32_t p;
+    if(pow > 0.0)
+        p = (pow + 0.5);
+    else
+        p = (pow - 0.5);
+    // x ~= 10^p  example if pow ==  1.3  p = 1
+    //                    if pow == -1.3  p = -1
+    double tenPow = exp10((double) p);
+    double mant = x/tenPow;
+
+    while(mant < 1.0) {
+        mant *= 10.0;
+        --p;
+    }
+
+    // I'm not sure how the mantissa is defined, but I don't care.  I just
+    // have that:  
+    //
+    //       x = mant * 10 ^ p  [very close]
+    //
+    // Ya, it better be that this is so:
+    DASSERT(x < 1.000001 * mant * exp10(p));
+    DASSERT(x > 0.999999 * mant * exp10(p));
+
+    //DSPEW("x = %lg = %lf * 10 ^(%d)", x, mant, p);
+
+    // Now trim digits off of mant.  Like for example:
+    //
+    //    1.1234 => 2.0   or  4.6234 => 5.0
+
+    uint32_t ix = (uint32_t) mant;
+
+    // We make it larger, not smaller.  Just certain values look good in
+    // plot grid lines.
+    //
+    switch(ix) {
+        case 9:
+        case 8:
+        case 7:
+        case 6:
+        case 5:
+            ix = 10;
+            break;
+        case 4:
+        case 3:
+        case 2:
+            ix = 5;
+            break;
+        case 1:
+            ix = 2;
+            break;
+        case 0:
+            ASSERT(0, "Bad Code");
+            break;
+    }
+
+    x = ix * exp10(p);
+
+    //DSPEW("x = %lg <= %" PRIu32" * 10 ^(%d)", x, ix, p);
+
+    *subDivider = ix;
+
+    return x;
+}
+
+
+static inline void DrawVSubGrid(cairo_t *cr, struct QsZoom *z,
+        double start, double delta, double end, double height) {
+
+    for(double x = start; x <= end; x += delta) {
+        double pix = xToPix(x, z);
+        cairo_move_to(cr, pix, 0);
+        cairo_line_to(cr, pix , height);
+        cairo_stroke(cr);
+    }
+}
+
+static inline void DrawHSubGrid(cairo_t *cr, struct QsZoom *z,
+        double start, double delta, double end, double width) {
+
+    for(double y = start; y <= end; y += delta) {
+        double pix = yToPix(y, z);
+        cairo_move_to(cr, 0, pix);
+        cairo_line_to(cr, width, pix);
+        cairo_stroke(cr);
+    }
+}
+
+
+// This will find a rounded up distance between lines that looks nice.
+// For example a data scaled space between lines of 2.0000e-3 and not
+// 1.8263e-3.
+//
+// Returns the distance between lines for a sub grid in plot
+// coordinates.
+//
+static inline double GetVGrid(cairo_t *cr,
+        double lineWidth/*vertical line width in pixels*/, 
+        double pixelSpace/*minimum pixels between lines*/,
+        struct QsZoom *z, double width, double height,
+        double fontSize, double *start_out,
+        uint32_t *subDivider) {
+
+    DASSERT(lineWidth <= pixelSpace);
+    ASSERT(z->xMin < z->xMax, "%lg < %lg", z->xMin, z->xMax);
+
+    double delta = (z->xMax - z->xMin) * pixelSpace/width;
+    delta = RoundUp(delta, subDivider);
+
+    //DSPEW("V grid spacing is %lg pixels (> %lg)",
+    //        delta * width /  (z->xMax - z->xMin), pixelSpace);
+
+    // start a little behind pixel 0.
+    double start = pixToX(0, z) - delta;
+    // Make the start a integer number of deltX
+
+    int32_t n;
+    if(start < 0.0)
+        n = (start/delta - 0.5);
+    else
+        n = (start/delta + 0.5);
+    // Make start a multiple of delta
+    start = n * delta;
+
+    //DSPEW("delta = %lg  start= %lg", delta, start);
+
+    *start_out = start;
+    return delta;
+}
+
+static inline double GetHGrid(cairo_t *cr,
+        double lineWidth/*vertical line width in pixels*/, 
+        double pixelSpace/*minimum pixels between lines*/,
+        struct QsZoom *z, double width, double height,
+        double fontSize, double *start_out,
+        uint32_t *subDivider) {
+
+    DASSERT(lineWidth <= pixelSpace);
+    ASSERT(z->yMin < z->yMax, "%lg < %lg", z->yMin, z->yMax);
+
+    double delta = (z->yMax - z->yMin) * pixelSpace/height;
+    delta = RoundUp(delta, subDivider);
+
+    //DSPEW("H grid spacing is %lg pixels (> %lg)",
+    //        delta * height /  (z->yMax - z->yMin), pixelSpace);
+
+    // start a little behind pixel 0.
+    double start = pixToY(height-1, z) - delta;
+    // Make the start a integer number of delta
+
+    int32_t n;
+    if(start < 0.0)
+        n = (start/delta - 0.5);
+    else
+        n = (start/delta + 0.5);
+    // Make start a multiple of delta
+    start = n * delta;
+
+    //DSPEW("H delta = %lg  start= %lg", delta, start);
+
+    *start_out = start;
+    return delta;
+}
+
+
+#if 1
+#  define GetFormat(X)  "%1.1g"
+
+#else
+static inline char *GetFormat(double x) {
+  double ax = fabs(x);
+  if(ax < 10000.0 && ax > 0.00001)
+      return "1.1f";
+  return "%01.1e";
+}
+#endif
+
+static inline void DrawVGrid(cairo_t *cr,
+        double lineWidth/*vertical line width in pixels*/, 
+        struct QsZoom *z, double width, double height,
+        double fontSize, double start,
+        double delta) {
+
+    cairo_set_line_width(cr, lineWidth);
+
+    double end = pixToX(width, z) + delta;
+
+    // TODO: Optimize performance in this loop.
+    //
+    for(double x = start; x <= end; x += delta) {
+
+        double pix = xToPix(x, z);
+        cairo_move_to(cr, pix, 0);
+        cairo_line_to(cr, pix , height);
+        cairo_stroke(cr);
+    }
+}
+
+static inline void DrawVGridLabels(cairo_t *cr,
+        double lineWidth/*vertical line width in pixels*/, 
+        struct QsZoom *z, double width, double height,
+        double fontSize, double start,
+        double delta) {
+
+    double end = pixToX(width, z) + delta;
+
+    const size_t T_SIZE = 32;
+    char label[T_SIZE];
+
+    double textY = height - fontSize;
+    if(height < 2*fontSize) textY = fontSize;
+
+    lineWidth *= 0.8;
+
+    for(double x = start; x <= end; x += delta) {
+
+        if(fabs(x) < delta/100)
+            // With infinite precision this would not happen, but we do
+            // not have infinite precision so we'll just fix the value so
+            // that we print 0 and not something like 1.3e-32.
+            x = 0.0;
+
+        double pix = xToPix(x, z);
+        snprintf(label, T_SIZE, GetFormat(x), x);
+        cairo_move_to(cr, pix + lineWidth, textY);
+        cairo_show_text(cr, label);
+    }
+}
+
+
+static inline void DrawHGrid(cairo_t *cr,
+        double lineWidth/*vertical line width in pixels*/, 
+        struct QsZoom *z, double width, double height,
+        double fontSize, double start,
+        double delta) {
+
+    cairo_set_line_width(cr, lineWidth);
+
+    double end = pixToY(0, z) + delta;
+
+    // TODO: Optimize performance in this loop.
+    //
+    for(double y = start; y <= end; y += delta) {
+
+        double pix = yToPix(y, z);
+        cairo_move_to(cr, 0, pix);
+        cairo_line_to(cr, width, pix);
+        cairo_stroke(cr);
+    }
+}
+
+
+static inline void DrawHGridLabels(cairo_t *cr,
+        double lineWidth/*vertical line width in pixels*/, 
+        struct QsZoom *z, double width, double height,
+        double fontSize, double start,
+        double delta) {
+
+    double end = pixToY(0, z) + delta;
+
+    const size_t T_SIZE = 32;
+    char label[T_SIZE];
+
+    double textX = fontSize;
+
+    lineWidth *= 0.8;
+
+    for(double y = start; y <= end; y += delta) {
+
+        if(fabs(y) < delta/100)
+            // With infinite precision this would not happen, but we do
+            // not have infinite precision so we'll just fix the value so
+            // that we print 0 and not something like 1.3e-32.
+            y = 0.0;
+
+        double pix = yToPix(y, z);
+        snprintf(label, T_SIZE, GetFormat(y), y);
+        cairo_move_to(cr, textX, pix - lineWidth - 1);
+        cairo_show_text(cr, label);
+    }
+}
+
+
+void DrawGrids(struct QsGraph *g, cairo_t *cr, bool show_subGrid) {
+
+    cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
+            CAIRO_FONT_WEIGHT_NORMAL);
+    const double fontSize = 20;
+    cairo_set_font_size(cr, fontSize);
+
+    double startX, deltaX, startY, deltaY;
+    uint32_t subDividerX, subDividerY;
+    double lineWidth = 5.7;
+
+    deltaX = GetVGrid(cr, lineWidth, 140, g->zoom,
+            g->width, g->height, fontSize, &startX,
+            &subDividerX);
+
+    deltaY = GetHGrid(cr, lineWidth, 140, g->zoom,
+            g->width, g->height, fontSize, &startY,
+            &subDividerY);
+
+
+    if(!show_subGrid)
+      goto drawGrid;
+
+    cairo_set_source_rgb(cr,
+            g->subGridColor.r, g->subGridColor.g, g->subGridColor.b);
+
+    switch(subDividerX) {
+        case 10:
+            cairo_set_line_width(cr, 1.5);
+            DrawVSubGrid(cr, g->zoom, startX, deltaX/10.0,
+                    pixToX(g->width, g->zoom) + deltaX, g->height);
+            cairo_set_line_width(cr, 4.0);
+            DrawVSubGrid(cr, g->zoom, startX + deltaX/2, deltaX,
+                    pixToX(g->width, g->zoom) + deltaX, g->height);
+            break;
+        case 5:
+            cairo_set_line_width(cr, 4.0);
+            DrawVSubGrid(cr, g->zoom, startX, deltaX/5.0,
+                    pixToX(g->width, g->zoom) + deltaX, g->height);
+            cairo_set_line_width(cr, 0.7);
+            DrawVSubGrid(cr, g->zoom, startX, deltaX/10.0,
+                    pixToX(g->width, g->zoom) + deltaX, g->height);
+            break;
+        case 2:
+            cairo_set_line_width(cr, 4.2);
+            DrawVSubGrid(cr, g->zoom, startX + deltaX/2, deltaX,
+                    pixToX(g->width, g->zoom) + deltaX, g->height);
+            cairo_set_line_width(cr, 1.5);
+            DrawVSubGrid(cr, g->zoom, startX, deltaX/10.0,
+                    pixToX(g->width, g->zoom) + deltaX, g->height);
+            break;
+        default:
+            ASSERT(0, "Bad Code");
+            break;
+    }
+
+
+    switch(subDividerY) {
+        case 10:
+            cairo_set_line_width(cr, 1.5);
+            DrawHSubGrid(cr, g->zoom, startY, deltaY/10.0,
+                    pixToY(0, g->zoom) + deltaY, g->width);
+            cairo_set_line_width(cr, 4.0);
+            DrawHSubGrid(cr, g->zoom, startY + deltaY/2, deltaY,
+                    pixToY(0, g->zoom) + deltaY, g->width);
+            break;
+        case 5:
+            cairo_set_line_width(cr, 4.0);
+            DrawHSubGrid(cr, g->zoom, startY, deltaY/5.0,
+                    pixToY(0, g->zoom) + deltaY, g->width);
+            cairo_set_line_width(cr, 0.7);
+            DrawHSubGrid(cr, g->zoom, startY, deltaY/10.0,
+                    pixToY(0, g->zoom) + deltaY, g->width);
+            break;
+        case 2:
+            cairo_set_line_width(cr, 4.2);
+            DrawHSubGrid(cr, g->zoom, startY + deltaY/2, deltaY,
+                    pixToY(0, g->zoom) + deltaY, g->width);
+            cairo_set_line_width(cr, 1.5);
+            DrawHSubGrid(cr, g->zoom, startY, deltaY/10.0,
+                    pixToY(0, g->zoom) + deltaY, g->width);
+            break;
+        default:
+            ASSERT(0, "Bad Code");
+            break;
+    }
+
+drawGrid:
+
+    cairo_set_source_rgb(cr,
+            g->gridColor.r, g->gridColor.g, g->gridColor.b);
+    DrawVGrid(cr, lineWidth, g->zoom, g->width, g->height,
+            fontSize, startX, deltaX);
+    DrawHGrid(cr, lineWidth, g->zoom, g->width, g->height,
+            fontSize, startY, deltaY);
+
+    cairo_set_source_rgb(cr,
+            g->axesLabelColor.r, g->axesLabelColor.g,
+            g->axesLabelColor.b);
+    DrawVGridLabels(cr, lineWidth, g->zoom, g->width, g->height,
+            fontSize, startX, deltaX);
+    DrawHGridLabels(cr, lineWidth, g->zoom, g->width, g->height,
+            fontSize, startY, deltaY);
+}

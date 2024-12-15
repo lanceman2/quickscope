@@ -86,25 +86,6 @@ static void Destroy_cb(GtkWidget *widget, struct QsGraph *g) {
 }
 
 
-// TODO: Can we use SIMD parallel processing for all this arithmetic?
-
-static inline double xToPix(double x, struct QsZoom *z) {
-    return (x - z->xMin) / z->xSlope;
-}
-
-static inline double pixToX(double p, struct QsZoom *z) {
-    return p * z->xSlope + z->xMin;
-}
-
-static inline double yToPix(double y, struct QsZoom *z) {
-    return (y - z->yMax) / z->ySlope;
-}
-
-static inline double pixToY(double p, struct QsZoom *z) {
-    return p * z->ySlope + z->yMax;
-}
-
-
 static struct QsZoom *PushZoom(struct QsGraph *g,
         double xMin, double xMax, double yMin, double yMax) {
 
@@ -160,7 +141,7 @@ static inline void FixZooms(struct QsGraph *g, int width, int height) {
         DASSERT(g->zoom);
         for(struct QsZoom *z = g->top; z; z = z->next) {
             z->xSlope = (z->xMax - z->xMin)/width;
-            z->ySlope = (z->xMin - z->xMax)/height;
+            z->ySlope = (z->yMin - z->yMax)/height;
         }
     }
 
@@ -173,112 +154,6 @@ static inline void FixZooms(struct QsGraph *g, int width, int height) {
     DASSERT(g->zoom);
 }
 
-static inline double Trim(double x) {
-
-    // TODO: This could be rewritten by using an understanding of floating
-    // point representation.  In this writing we did not even try to
-    // understand how floating point numbers are stored, we just used math
-    // functions that do the right thing.
-
-    ASSERT(x > 0.0);
-    ASSERT(isnormal(x));
-    ASSERT(x < DBL_MAX/8.0); // max is about 1.0e308
-
-    double pow = log10(x);
-    // x = 10^pow
-    int32_t p;
-    if(pow > 0.0)
-        p = (pow + 0.5);
-    else
-        p = (pow - 0.5);
-    // x ~= 10^p  example if pow ==  1.3  p = 1
-    //                    if pow == -1.3  p = -1
-    double tenPow = exp10((double) p);
-    // I'm not sure how the mantissa is defined, but I don't care.  I just
-    // have that:  
-    //
-    //       x = mant * 10 ^ p  [very close]
-    //
-    double mant = x/tenPow;
-
-    while(mant < 1.0) {
-        mant *= 10.0;
-        --p;
-    }
-
-    // Ya, it better be that this is so:
-    DASSERT(x < 1.000001 * mant * exp10(p));
-    DASSERT(x > 0.999999 * mant * exp10(p));
-
-    //DSPEW("x = %lg = %lf * 10 ^(%d)", x, mant, p);
-
-    // Now trim digits off of mant.  Like for example:
-    //
-    //    1.1234 => 2.0   or  4.6234 => 5.0
-
-    uint32_t ix = (uint32_t) mant;
-
-
-    // We make it larger, not smaller.  Just certain values look good in
-    // plot grid lines.
-    //
-    switch(ix) {
-        case 9:
-        case 8:
-        case 7:
-        case 6:
-        case 5:
-            ix = 10;
-            break;
-        case 4:
-        case 3:
-        case 2:
-            ix = 5;
-            break;
-        case 1:
-            ix = 2;
-            break;
-        case 0:
-            ASSERT(0, "Bad Code");
-            break;
-    }
-
-    x = ix * exp10(p);
-
-    DSPEW("x = %lg <= %" PRIu32" * 10 ^(%d)", x, ix, p);
-
-    return x;
-}
-
-
-static inline void DrawVGrid(cairo_t *cr,
-        double lineWidth/*vertical line width in pixels*/, 
-        double pixelSpace/*minimum pixels between lines*/,
-        struct QsZoom *z, double width, double height) {
-
-    DASSERT(lineWidth <= pixelSpace);
-    ASSERT(z->xMin < z->xMax, "%lg < %lg", z->xMin, z->xMax);
-
-    double deltaX = (z->xMax - z->xMin) * pixelSpace/width;
-    deltaX = Trim(deltaX);
-
-    DSPEW("V grid spacing is %lg pixels (> %lg)",
-            deltaX * width /  (z->xMax - z->xMin), pixelSpace);
-
-    double start = pixToX(0, z);
-
-    double end = pixToX(width, z) + deltaX;
-    int i = 0;
-
-    cairo_set_line_width(cr, lineWidth);
-
-    for(double x=start; x<=end; ++i, x=i*deltaX) {
-        double pix = xToPix(x, z);
-        cairo_move_to(cr, pix, 0);
-        cairo_line_to(cr, pix , height);
-        cairo_stroke(cr);
-    }
-}
 
 static gboolean drawingArea_configure_cb(GtkWidget *w,
         GdkEventConfigure *e, struct QsGraph *g) {
@@ -287,7 +162,7 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
     DASSERT(g->drawingArea);
     DASSERT(w == GTK_WIDGET(g->drawingArea));
 
-    DSPEW();
+    //DSPEW();
 
     GtkAllocation a;
     gtk_widget_get_allocation(w, &a);
@@ -299,21 +174,18 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
     g->bgSurface = gdk_window_create_similar_surface(
             gtk_widget_get_window(w),
             // I tried using CAIRO_CONTENT_COLOR_ALPHA and it's buggy as
-            // hell.  Looks like the GNOME compositor is buggy as fuck.
+            // hell.  Looks like the GNOME compositor is buggy.
             //CAIRO_CONTENT_COLOR_ALPHA,
             CAIRO_CONTENT_COLOR,
-            a.width, a.height);
+            g->width, g->height);
     DASSERT(g->bgSurface);
-
-
 
     cairo_t *cr = cairo_create(g->bgSurface);
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_source_rgb(cr, g->bgColor.r, g->bgColor.g, g->bgColor.b);
     cairo_paint(cr);
 
-    cairo_set_source_rgb(cr, 1, 0, 0);
-    DrawVGrid(cr, 0.7, 30, g->zoom, g->width, g->height);
+    DrawGrids(g, cr, true/*show subGrid*/);
 
     cairo_destroy(cr);
 
@@ -332,12 +204,12 @@ static gboolean drawingArea_draw_cb(GtkWidget *w,
     // There seems to be far to many draw calls
     //DSPEW();
 
-
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     cairo_set_source_surface(cr, g->bgSurface, 0, 0);
     cairo_paint(cr);
     return TRUE;
 }
+
 
 // Add a new graph and tab to the windows notebook
 //
@@ -395,14 +267,18 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
     // TODO: Find the extreme values that may be plotted.
     //
     // Setup graph/plot scale to start with:
-    g->xMin = 0;
-    g->xMax = 1;
+    g->xMin = -2.24e-6;
+    g->xMax = 1.3e-6;
     g->yMin = 0;
     g->yMax = 1;
 
+    // set default colors
+    SetColor(&g->bgColor, 0, 0, 0);
+    SetColor(&g->gridColor, 0, 0.8, 0.1);
+    SetColor(&g->subGridColor, 0.4, 0.4, 0.6);
+    SetColor(&g->axesLabelColor, 0.99, 0.99, 0.99);
 
     // Do this after the graph data is setup so we know how to draw.
     gtk_widget_show_all(vbox);
     gtk_notebook_append_page(w->gtkNotebook, vbox, tab);
 }
-
