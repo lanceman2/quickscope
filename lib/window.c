@@ -94,7 +94,13 @@ static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
         case ShowHideMenubar_key:
             showHideMenubar_cb();
             return TRUE;
-        case NewWindow_key:
+        case ShowHideControlbar_key:
+            showHideControlbar_cb();
+            return TRUE;
+        case ShowHideStatusbar_key:
+            showHideStatusbar_cb();
+            return TRUE;
+          case NewWindow_key:
             newWindow_cb();
             return TRUE;
         case Quit_key:

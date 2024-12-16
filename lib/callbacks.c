@@ -126,7 +126,7 @@ void showHideTabbar_cb(void) {
     struct QsWindow *win = GetCurrentWindow();
     FlipShowHide(win, GTK_WIDGET(win->gtkNotebook),
             win->showHideTabbar_item,
-            &win->buttonbar_showing, ShowTabbar, HideTabbar);
+            &win->tabbar_showing, ShowTabbar, HideTabbar);
 }
 
 void newTab_cb(void) {
