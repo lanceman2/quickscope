@@ -30,6 +30,11 @@ void Cleanup(void) {
 
     CleanupCSS();
 
+    if(hand_cursor) {
+        g_object_unref(G_OBJECT(hand_cursor));
+        hand_cursor = 0;
+    }
+
     //CleanupTabPopupMenu();
 
     // It looks like I need to destroy the main windows because destroying

@@ -212,7 +212,7 @@ static inline void GetLabel(char *label, size_t LEN,
 
     //snprintf(label, LEN, "%1.1e", x);
 
-    if(pow >= -1 && pow <= 4) {
+    if(pow >= -1 && pow <= 3) {
         snprintf(label, LEN, "%3.4f", x);
         // Remove trailing zeros.
         StripZeros(label);
@@ -228,18 +228,6 @@ static inline void GetLabel(char *label, size_t LEN,
     snprintf(label+l, LEN-l, "e%+d", pow);
 }
 
-
-#if 1
-#  define GetFormat(X)  "%1.1e"
-
-#else
-static inline char *GetFormat(double x) {
-  double ax = fabs(x);
-  if(ax < 10000.0 && ax > 0.00001)
-      return "1.1f";
-  return "%01.1e";
-}
-#endif
 
 static inline void DrawVGrid(cairo_t *cr,
         double lineWidth/*vertical line width in pixels*/, 
@@ -292,6 +280,12 @@ static inline void DrawVGridLabels(cairo_t *cr,
         double pix = xToPix(x, z);
         GetLabel(label, T_SIZE, x, exp10pow, pow);
         cairo_move_to(cr, pix + lineWidth, textY);
+        cairo_show_text(cr, label);
+
+        cairo_move_to(cr, pix + lineWidth, textY - height/3);
+        cairo_show_text(cr, label);
+
+        cairo_move_to(cr, pix + lineWidth, textY - 2*height/3);
         cairo_show_text(cr, label);
     }
 }
@@ -349,7 +343,13 @@ static inline void DrawHGridLabels(cairo_t *cr,
         GetLabel(label, T_SIZE, y, exp10pow, pow);
         cairo_move_to(cr, textX, pix - lineWidth - 1);
         cairo_show_text(cr, label);
-    }
+
+        cairo_move_to(cr, textX + width/3, pix - lineWidth - 1);
+        cairo_show_text(cr, label);
+
+        cairo_move_to(cr, textX + 2*width/3, pix - lineWidth - 1);
+        cairo_show_text(cr, label);
+     }
 }
 
 

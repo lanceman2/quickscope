@@ -15,7 +15,6 @@
 #include "graph.h"
 
 
-
 #if 0
 static void pressed_cb(GtkGestureClick *gesture,
         int n_press, double x, double y, struct QsGraph *g) {
@@ -65,6 +64,11 @@ static void Destroy_cb(GtkWidget *widget, struct QsGraph *g) {
     DASSERT(g);
 
     DSPEW("Freeing graph=%p", g);
+
+    if(g->zoomBoxSurface) {
+        cairo_surface_destroy(g->zoomBoxSurface);
+        g->zoomBoxSurface = 0;
+    }
 
     if(g->bgSurface) {
         cairo_surface_destroy(g->bgSurface);
@@ -166,10 +170,12 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
 
     GtkAllocation a;
     gtk_widget_get_allocation(w, &a);
-    FixZooms(g, a.width, a.height);
+    FixZooms(g, a.width*3, a.height*3);
 
     if(g->bgSurface)
         cairo_surface_destroy(g->bgSurface);
+    if(g->zoomBoxSurface)
+        cairo_surface_destroy(g->zoomBoxSurface);
 
     g->bgSurface = gdk_window_create_similar_surface(
             gtk_widget_get_window(w),
@@ -180,13 +186,24 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
             g->width, g->height);
     DASSERT(g->bgSurface);
 
+    g->zoomBoxSurface = gdk_window_create_similar_surface(
+            gtk_widget_get_window(w),
+            // This must have alpha.
+            CAIRO_CONTENT_COLOR_ALPHA,
+            g->width/3, g->height/3);
+    DASSERT(g->zoomBoxSurface);
+
     cairo_t *cr = cairo_create(g->bgSurface);
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     cairo_set_source_rgb(cr, g->bgColor.r, g->bgColor.g, g->bgColor.b);
     cairo_paint(cr);
-
     DrawGrids(g, cr, true/*show subGrid*/);
+    cairo_destroy(cr);
 
+    cr = cairo_create(g->zoomBoxSurface);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 0.0);
+    cairo_paint(cr);
     cairo_destroy(cr);
 
     return TRUE; // TRUE == done processing event
@@ -205,8 +222,15 @@ static gboolean drawingArea_draw_cb(GtkWidget *w,
     //DSPEW();
 
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_surface(cr, g->bgSurface, 0, 0);
+    cairo_set_source_surface(cr, g->bgSurface, -g->width/3, -g->height/3);
     cairo_paint(cr);
+
+    if(g->haveZoomBox) {
+        cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+        cairo_set_source_surface(cr, g->zoomBoxSurface, 0, 0);
+        cairo_paint(cr);
+    }
+
     return TRUE;
 }
 
@@ -244,8 +268,22 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
             gtk_widget_get_events(drawingArea)
                 | GDK_LEAVE_NOTIFY_MASK
                 | GDK_BUTTON_PRESS_MASK
+                | GDK_BUTTON_RELEASE_MASK
                 | GDK_POINTER_MOTION_MASK
-                | GDK_POINTER_MOTION_HINT_MASK);
+                | GDK_POINTER_MOTION_HINT_MASK
+                | GDK_ENTER_NOTIFY_MASK
+                | GDK_LEAVE_NOTIFY_MASK);
+
+    g_signal_connect(drawingArea, "button-press-event",
+            G_CALLBACK(graph_buttonPress_cb), g);
+    g_signal_connect(drawingArea, "button-release-event",
+            G_CALLBACK(graph_buttonRelease_cb), g);
+    g_signal_connect(drawingArea, "motion-notify-event",
+            G_CALLBACK(graph_pointerMotion_cb), g);
+    g_signal_connect(drawingArea, "enter-notify-event",
+            G_CALLBACK(graph_pointerEnter_cb), g);
+    g_signal_connect(drawingArea, "leave-notify-event",
+            G_CALLBACK(graph_pointerLeave_cb), g);
 
     g_signal_connect(drawingArea, "draw",
             G_CALLBACK(drawingArea_draw_cb), g);

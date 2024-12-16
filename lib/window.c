@@ -15,6 +15,8 @@
 
 uint32_t mod_keys = 0;
 
+GdkCursor *hand_cursor = 0;
+
 
 static void DestroyWindow_cb(GtkWindow *gtkWindow, struct QsWindow *w) {
 
@@ -193,6 +195,13 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
 
     g_signal_connect(w->gtkNotebook,"switch-page",
             G_CALLBACK(notebookSwitchPage_cb), w);
+
+    if(!hand_cursor) {
+        hand_cursor = gdk_cursor_new_from_name(
+                gtk_widget_get_display(GTK_WIDGET(gtkWindow)),
+                "grabbing");
+        ASSERT(hand_cursor);
+    }
 }
 
 

@@ -12,6 +12,12 @@ struct QsColor {
   double r, g, b;
 };
 
+
+#define SLIDE_BUTTON     1 /*1 -> left*/
+
+#define SLIDE_ACTION    01  // sliding the graph with the pointer
+
+
 struct QsGraph {
 
     GtkWidget *tab;
@@ -19,6 +25,7 @@ struct QsGraph {
     GtkWidget *drawingArea;
 
     cairo_surface_t *bgSurface; // background
+    cairo_surface_t *zoomBoxSurface;
 
     GtkWidget *controlbar; // gtk entry widget
     GtkStatusbar *statusbar;
@@ -32,8 +39,15 @@ struct QsGraph {
 
     struct QsColor bgColor, gridColor, subGridColor, axesLabelColor;
 
+    // Mark that we are doing a thing.  Since there is just one window
+    // focus we can use a global variable like this:
+    uint32_t zoom_action;
+    double x0, y0; // pointer position at the start of an zoom action
+    //double x, y; // pointer position in current zoom action
+
     bool controlbar_showing;
     bool statusbar_showing;
+    bool haveZoomBox;
 };
 
 
@@ -64,6 +78,19 @@ static inline void SetColor(struct QsColor *c,
 }
 
 extern void DrawGrids(struct QsGraph *g, cairo_t *cr, bool show_subGrid);
+
+extern gboolean graph_buttonPress_cb(GtkWidget *drawingArea,
+        GdkEventButton *e, struct QsGraph *g);
+extern gboolean graph_buttonRelease_cb(GtkWidget *drawingArea,
+        GdkEventButton *e, struct QsGraph *g);
+extern gboolean graph_pointerMotion_cb(GtkWidget *drawingArea,
+        GdkEventMotion *e, struct QsGraph *g);
+extern gboolean graph_pointerEnter_cb(GtkWidget *drawingArea,
+        GdkEvent *e, struct QsGraph *g);
+extern gboolean graph_pointerLeave_cb(GtkWidget *drawingArea,
+        GdkEvent *e, struct QsGraph *g);
+
+
 
 // TODO: Can we use SIMD parallel processing for all this arithmetic?
 
