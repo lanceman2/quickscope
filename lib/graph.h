@@ -25,6 +25,8 @@ struct QsGraph {
     GtkWidget *drawingArea;
 
     cairo_surface_t *bgSurface; // background
+    cairo_surface_t *fgSurface; // foreground with plots
+
     cairo_surface_t *zoomBoxSurface;
 
     GtkWidget *controlbar; // gtk entry widget
