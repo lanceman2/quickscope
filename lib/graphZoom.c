@@ -41,7 +41,7 @@ gboolean graph_buttonPress_cb(GtkWidget *drawingArea,
       g->y0 = e->y;
   }
 
-  return TRUE;
+  return TRUE; // TRUE -> eat the event
 }
 
 gboolean graph_buttonRelease_cb(GtkWidget *drawingArea,
@@ -66,6 +66,9 @@ gboolean graph_buttonRelease_cb(GtkWidget *drawingArea,
       window = 0;
       // Mark the action as done.
       g->zoom_action &= ~SLIDE_ACTION;
+      FixZoomsShift(g, g->x0 - e->x, g->y0 - e->y);
+      g->x0 = g->y0 = g->x = g->y = 0.0;
+      DASSERT(!g->zoom_action, "We have multi button press actions??");
   }
 
   return TRUE;
@@ -92,6 +95,11 @@ gboolean graph_pointerMotion_cb(GtkWidget *drawingArea, GdkEventMotion *e,
     if(g->zoom_action & SLIDE_ACTION) {
 
         DSPEW("SLIDE x,y=%g,%g", e->x, e->y);
+
+        g->x = e->x;
+        g->y = e->y;
+
+        gtk_widget_queue_draw(drawingArea);
     }
 
 

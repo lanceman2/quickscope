@@ -123,10 +123,55 @@ static struct QsZoom *PushZoom(struct QsGraph *g,
 }
 
 
+static inline void DrawBgSurface(struct QsGraph *g) {
+
+    DASSERT(g);
+    DASSERT(g->bgSurface);
+
+    cairo_t *cr = cairo_create(g->bgSurface);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_rgb(cr, g->bgColor.r, g->bgColor.g, g->bgColor.b);
+    cairo_paint(cr);
+    DrawGrids(g, cr, true/*show subGrid*/);
+    cairo_destroy(cr);
+}
+
+
+
+// The view of the drawing area moved dx, dy, and did not change size.
+//
+void FixZoomsShift(struct QsGraph *g, double dx, double dy) {
+
+    DASSERT(g);
+    DASSERT(g->top);
+    DASSERT(g->zoom);
+    DASSERT(g->xMin < g->xMax);
+    DASSERT(g->yMin < g->yMax);
+
+    if(dx == 0.0 && dy == 0.0) return;
+
+    g->xMin += dx * g->zoom->xSlope;
+    g->xMax += dx * g->zoom->xSlope;
+    g->yMin += dy * g->zoom->ySlope;
+    g->yMax += dy * g->zoom->ySlope;
+
+    DASSERT(g->zoom);
+    for(struct QsZoom *z = g->top; z; z = z->next) {
+        z->xMin += dx * z->xSlope;
+        z->xMax += dx * z->xSlope;
+        z->yMin += dy * z->ySlope;
+        z->yMax += dy * z->ySlope;
+    }
+
+    DrawBgSurface(g);
+    gtk_widget_queue_draw(g->drawingArea);
+}
+
+
 // The width and/or height of the drawing Area changed and so must all the
 // zoom scaling.  Create a zoom if there are none.
 //
-static inline void FixZooms(struct QsGraph *g, int width, int height) {
+static inline void FixZoomsScale(struct QsGraph *g, int width, int height) {
 
     DASSERT(g);
     DASSERT(width>=1);
@@ -170,7 +215,7 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
 
     GtkAllocation a;
     gtk_widget_get_allocation(w, &a);
-    FixZooms(g, a.width*3, a.height*3);
+    FixZoomsScale(g, a.width*3, a.height*3);
 
     if(g->bgSurface)
         cairo_surface_destroy(g->bgSurface);
@@ -193,14 +238,9 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
             g->width/3, g->height/3);
     DASSERT(g->zoomBoxSurface);
 
-    cairo_t *cr = cairo_create(g->bgSurface);
-    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_rgb(cr, g->bgColor.r, g->bgColor.g, g->bgColor.b);
-    cairo_paint(cr);
-    DrawGrids(g, cr, true/*show subGrid*/);
-    cairo_destroy(cr);
+    DrawBgSurface(g);
 
-    cr = cairo_create(g->zoomBoxSurface);
+    cairo_t *cr = cairo_create(g->zoomBoxSurface);
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 0.0);
     cairo_paint(cr);
@@ -222,8 +262,30 @@ static gboolean drawingArea_draw_cb(GtkWidget *w,
     //DSPEW();
 
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_surface(cr, g->bgSurface, -g->width/3, -g->height/3);
+
+    double x, y;
+    const double w2_3 = - (2.0/3.0) * g->width;
+    const double h2_3 = - (2.0/3.0) * g->height;
+
+    // Note: g->width and g->height are both dividable by 3.
+
+    x = -g->width/3 - g->x0 + g->x;
+    y = -g->height/3 - g->y0 + g->y;
+    if(x < w2_3) x = w2_3;
+    else if(x > 0.0) x = 0.0;
+    if(y < h2_3) y = h2_3;
+    else if(y > 0.0) y = 0.0;
+
+    cairo_set_source_surface(cr, g->bgSurface, x, y);
     cairo_paint(cr);
+
+    if(g->zoom_action) {
+        // We are in the process of zooming.
+        //
+        if(g->zoom_action & SLIDE_ACTION) {
+
+        }
+    }
 
     if(g->haveZoomBox) {
         cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -307,7 +369,7 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
     // Setup graph/plot scale to start with:
     g->xMin = -2.24e5;
     g->xMax = 1.3e+5;
-    g->yMin = -2.0e-1;
+    g->yMin = -1.0e-1;
     g->yMax = 1.0e-1;
 
     // set default colors

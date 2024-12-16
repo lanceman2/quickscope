@@ -45,7 +45,7 @@ struct QsGraph {
     // focus we can use a global variable like this:
     uint32_t zoom_action;
     double x0, y0; // pointer position at the start of an zoom action
-    //double x, y; // pointer position in current zoom action
+    double x, y; // pointer position in current zoom action
 
     bool controlbar_showing;
     bool statusbar_showing;
@@ -92,7 +92,7 @@ extern gboolean graph_pointerEnter_cb(GtkWidget *drawingArea,
 extern gboolean graph_pointerLeave_cb(GtkWidget *drawingArea,
         GdkEvent *e, struct QsGraph *g);
 
-
+extern void FixZoomsShift(struct QsGraph *g, double dx, double dy);
 
 // TODO: Can we use SIMD parallel processing for all this arithmetic?
 
