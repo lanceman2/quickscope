@@ -89,6 +89,7 @@ static inline struct QsWindow *GetCurrentWindow(void) {
 // bit mask of modifier keys caught by the main window.
 extern uint32_t mod_keys;
 extern GdkCursor *hand_cursor;
+extern gint screen_width, screen_height;
 
 void CleanupCSS(void);
 void AddCSS(void);

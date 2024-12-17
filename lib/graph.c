@@ -27,7 +27,7 @@ static void pressed_cb(GtkGestureClick *gesture,
 
 // Return true if there are still zooms to pop.
 //
-// We do not Pop (free) the last one; unless we are destroying the graph.
+// We do not pop (free) the last one; unless we are destroying the graph.
 // We need to keep the last one so we can draw something.
 //
 static inline bool PopZoom(struct QsGraph *g) {
@@ -96,12 +96,10 @@ static struct QsZoom *PushZoom(struct QsGraph *g,
     struct QsZoom *z = malloc(sizeof(*z));
     ASSERT(z, "malloc(%zu) failed", sizeof(*z));
 
-    z->xMin = xMin;
-    z->xMax = xMax;
-    z->yMin = yMin;
-    z->yMax = yMax;
     z->xSlope = (xMax - xMin)/g->width;
     z->ySlope = (yMin - yMax)/g->height;
+    z->xShift = xMin - g->padX * z->xSlope;
+    z->yShift = yMax - g->padY * z->ySlope;
 
     // Add to the end of the list of zooms
     if(g->zoom) {
@@ -139,6 +137,7 @@ static inline void DrawBgSurface(struct QsGraph *g) {
 
 
 // The view of the drawing area moved dx, dy, and did not change size.
+// It just shifted position.
 //
 void FixZoomsShift(struct QsGraph *g, double dx, double dy) {
 
@@ -157,10 +156,8 @@ void FixZoomsShift(struct QsGraph *g, double dx, double dy) {
 
     DASSERT(g->zoom);
     for(struct QsZoom *z = g->top; z; z = z->next) {
-        z->xMin += dx * z->xSlope;
-        z->xMax += dx * z->xSlope;
-        z->yMin += dy * z->ySlope;
-        z->yMax += dy * z->ySlope;
+        z->xShift += dx * z->xSlope;
+        z->yShift += dy * z->ySlope;
     }
 
     DrawBgSurface(g);
@@ -168,39 +165,67 @@ void FixZoomsShift(struct QsGraph *g, double dx, double dy) {
 }
 
 
+static inline
+void GetPadding(int width, int height, int *padX, int *padY) {
+
+
+    if(width < screen_width/3)
+        *padX = width;
+    else
+        *padX = screen_width/3 + (width - screen_width/3)/4;
+
+    if(height < screen_height/3)
+        *padY = height;
+    else
+        *padY = screen_height/3 + (height - screen_height/3)/4;
+
+    //DSPEW("                padX=%d  padY=%d", *padX, *padY);
+}
+
+
 // The width and/or height of the drawing Area changed and so must all the
 // zoom scaling.  Create a zoom if there are none.
+//
+// This assumes that the displayed user values did not change, just the
+// drawing area changed size; i.e. there is a bigger or smaller user view
+// but the plots did not shift in x or y direction.
 //
 static inline void FixZoomsScale(struct QsGraph *g, int width, int height) {
 
     DASSERT(g);
-    DASSERT(width>=1);
-    DASSERT(height>=1);
+    DASSERT(g->top);
+    DASSERT(g->zoom);
     DASSERT(g->xMin < g->xMax);
     DASSERT(g->yMin < g->yMax);
 
-    bool wh_change = (g->width != width || g->height != height);
+    if(g->width == width && g->height == height)
+        return;
 
-    if(wh_change) {
-        g->width = width;
-        g->height = height;
+    int padX, padY;
+    // Get the new padding for the new width and height.
+    GetPadding(width, height, &padX, &padY);
+
+
+    struct QsZoom *z = g->top;
+    z->xSlope = (g->xMax - g->xMin)/width;
+    z->ySlope = (g->yMin - g->yMax)/height;
+    z->xShift = g->xMin - padX * z->xSlope;
+    z->yShift = g->yMax - padY * z->ySlope;
+
+    for(z = z->next; z; z = z->next) {
+        z->xShift += g->padX * z->xSlope;
+        z->xSlope *= ((double) g->width)/((double) width);
+        z->xShift -= padX * z->xSlope;
+
+        z->yShift += g->padY * z->ySlope;
+        z->ySlope *= ((double) g->height)/((double) height);
+        z->yShift -= padY * z->ySlope;
     }
 
-    if(g->top && wh_change) {
-        DASSERT(g->zoom);
-        for(struct QsZoom *z = g->top; z; z = z->next) {
-            z->xSlope = (z->xMax - z->xMin)/width;
-            z->ySlope = (z->yMin - z->yMax)/height;
-        }
-    }
-
-    if(!g->top) {
-        DASSERT(!g->zoom);
-        PushZoom(g, g->xMin, g->xMax, g->yMin, g->yMax);
-    }
-
-    DASSERT(g->top);
-    DASSERT(g->zoom);
+    g->width = width;
+    g->height = height;
+    g->padX = padX;
+    g->padY = padY;
 }
 
 
@@ -215,7 +240,23 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
 
     GtkAllocation a;
     gtk_widget_get_allocation(w, &a);
-    FixZoomsScale(g, a.width*3, a.height*3);
+
+    // TODO: WTF
+    if(a.width < 2 || a.height < 2)
+        // This seems to happen before a more reasonable size comes.
+        return TRUE;
+
+    if(!g->top) {
+        DASSERT(!g->zoom);
+        // Make the first zoom.
+        GetPadding(a.width, a.height, &g->padX, &g->padY);
+        g->width = a.width;
+        g->height = a.height;
+        PushZoom(g, g->xMin, g->xMax, g->yMin, g->yMax);
+    } else {
+        DASSERT(g->zoom);
+        FixZoomsScale(g, a.width, a.height);
+    }
 
     if(g->bgSurface)
         cairo_surface_destroy(g->bgSurface);
@@ -228,14 +269,14 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
             // hell.  Looks like the GNOME compositor is buggy.
             //CAIRO_CONTENT_COLOR_ALPHA,
             CAIRO_CONTENT_COLOR,
-            g->width, g->height);
+            g->width + 2 * g->padX, g->height + 2 * g->padY);
     DASSERT(g->bgSurface);
 
     g->zoomBoxSurface = gdk_window_create_similar_surface(
             gtk_widget_get_window(w),
             // This must have alpha.
             CAIRO_CONTENT_COLOR_ALPHA,
-            g->width/3, g->height/3);
+            g->width, g->height);
     DASSERT(g->zoomBoxSurface);
 
     DrawBgSurface(g);
@@ -264,28 +305,20 @@ static gboolean drawingArea_draw_cb(GtkWidget *w,
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 
     double x, y;
-    const double w2_3 = - (2.0/3.0) * g->width;
-    const double h2_3 = - (2.0/3.0) * g->height;
+    const double wp = - 2 * g->padX;
+    const double hp = - 2 * g->padY;
 
-    // Note: g->width and g->height are both dividable by 3.
+    x = - g->padX - g->x0 + g->x;
+    y = - g->padY - g->y0 + g->y;
 
-    x = -g->width/3 - g->x0 + g->x;
-    y = -g->height/3 - g->y0 + g->y;
-    if(x < w2_3) x = w2_3;
+    if(x < wp) x = wp;
     else if(x > 0.0) x = 0.0;
-    if(y < h2_3) y = h2_3;
+
+    if(y < hp) y = hp;
     else if(y > 0.0) y = 0.0;
 
     cairo_set_source_surface(cr, g->bgSurface, x, y);
     cairo_paint(cr);
-
-    if(g->zoom_action) {
-        // We are in the process of zooming.
-        //
-        if(g->zoom_action & SLIDE_ACTION) {
-
-        }
-    }
 
     if(g->haveZoomBox) {
         cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -371,6 +404,13 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
     g->xMax = 1.3e+5;
     g->yMin = -1.0e-1;
     g->yMax = 1.0e-1;
+
+#if 0
+    g->xMin = 0;
+    g->xMax = 1;
+    g->yMin = 0;
+    g->yMax = 1;
+#endif
 
     // set default colors
     SetColor(&g->bgColor, 0, 0, 0);

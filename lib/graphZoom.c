@@ -64,7 +64,21 @@ gboolean graph_buttonRelease_cb(GtkWidget *drawingArea,
       window = 0;
       // Mark the action as done.
       g->zoom_action &= ~SLIDE_ACTION;
-      FixZoomsShift(g, g->x0 - e->x, g->y0 - e->y);
+
+      double dx, dy;
+      dx = g->x0 - e->x;
+      dy = g->y0 - e->y;
+        
+      if(dx > g->padX)
+          dx = g->padX;
+      else if(dx < - g->padX)
+          dx = - g->padX;
+      if(dy > g->padY)
+          dy = g->padY;
+      else if(dy < - g->padY)
+          dy = - g->padY;
+
+      FixZoomsShift(g, dx, dy);
       g->x0 = g->y0 = g->x = g->y = 0.0;
       DASSERT(!g->zoom_action, "We have multi button press actions??");
   }

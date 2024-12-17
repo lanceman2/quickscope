@@ -20,6 +20,7 @@ static bool needCleanup = false;
 
 uint32_t windowCount = 0;
 GtkApplication *app = 0;
+int screen_width = 0, screen_height = 0;
 
 
 static
@@ -67,6 +68,8 @@ static void startup_cb (GApplication *application) {
 
     CreatePopoverMenu();
     AddActions(0, 0);
+
+
 }
 
 
@@ -95,6 +98,7 @@ void qsApp_create(int argc, char **argv, GtkApplication *a) {
     // TODO: Parse arguments if they are non-zero.
     if(argv && argc > 0)
         WARN("Add argument parsing code here");
+
 }
 
 

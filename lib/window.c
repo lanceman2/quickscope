@@ -98,7 +98,7 @@ static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
             showHideControlbar_cb();
             return TRUE;
         case ShowHideStatusbar_key:
-            showHideStatusbar_cb();
+   showHideStatusbar_cb();
             return TRUE;
           case NewWindow_key:
             newWindow_cb();
@@ -157,6 +157,27 @@ static gboolean notebookSwitchPage_cb(GtkNotebook *notebook,
 
 static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
 
+    if(screen_width == 0) {
+
+        GdkScreen *s = gdk_screen_get_default();
+        ASSERT(s);
+        GdkDisplay *d = gdk_display_get_default();
+        ASSERT(d);
+
+        GdkMonitor *monitor = gdk_display_get_monitor(d, 0);
+        ASSERT(monitor);
+        GdkRectangle rec;
+        gdk_monitor_get_geometry(monitor, &rec);
+
+        screen_width = rec.width;
+        screen_height = rec.height;
+
+        DSPEW("screen width,height=%d,%d", screen_width, screen_height);
+
+        DASSERT(screen_width > 200);
+        DASSERT(screen_height > 200);
+    }
+
     DASSERT(gApp == app);
 
     AddCSS();
@@ -180,7 +201,6 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     DASSERT(l);
     gtk_label_set_markup(l, "New <u>G</u>raph Tab");
 
-    gtk_widget_show_all(GTK_WIDGET(gtkWindow));
 
     g_object_set_data(G_OBJECT(gtkWindow), "qsWindow", w);
     gtk_window_set_application(gtkWindow, app);
@@ -208,6 +228,9 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
                 "grabbing");
         ASSERT(hand_cursor);
     }
+
+
+    gtk_widget_show_all(GTK_WIDGET(gtkWindow));
 }
 
 

@@ -130,18 +130,15 @@ static inline void DrawHSubGrid(cairo_t *cr, struct QsZoom *z,
 static inline double GetVGrid(cairo_t *cr,
         double lineWidth/*vertical line width in pixels*/, 
         double pixelSpace/*minimum pixels between lines*/,
-        struct QsZoom *z, double width, double height,
+        struct QsZoom *z,
         double fontSize, double *start_out,
         uint32_t *subDivider, int32_t *pow) {
 
     DASSERT(lineWidth <= pixelSpace);
-    ASSERT(z->xMin < z->xMax, "%lg < %lg", z->xMin, z->xMax);
 
-    double delta = (z->xMax - z->xMin) * pixelSpace/width;
+    // delta is in user values not pixels.
+    double delta = z->xSlope * pixelSpace;
     delta = RoundUp(delta, subDivider, pow);
-
-    //DSPEW("V grid spacing is %lg pixels (> %lg)",
-    //        delta * width /  (z->xMax - z->xMin), pixelSpace);
 
     // start a little behind pixel 0.
     double start = pixToX(0, z) - delta;
@@ -155,7 +152,7 @@ static inline double GetVGrid(cairo_t *cr,
     // Make start a multiple of delta
     start = n * delta;
 
-    //DSPEW("delta = %lg  start= %lg", delta, start);
+    //DSPEW("V delta = %lg  start= %lg", delta, start);
 
     *start_out = start;
     return delta;
@@ -169,13 +166,9 @@ static inline double GetHGrid(cairo_t *cr,
         uint32_t *subDivider, int32_t *pow) {
 
     DASSERT(lineWidth <= pixelSpace);
-    ASSERT(z->yMin < z->yMax, "%lg < %lg", z->yMin, z->yMax);
 
-    double delta = (z->yMax - z->yMin) * pixelSpace/height;
+    double delta = - z->ySlope * pixelSpace;
     delta = RoundUp(delta, subDivider, pow);
-
-    //DSPEW("H grid spacing is %lg pixels (> %lg)",
-    //        delta * height /  (z->yMax - z->yMin), pixelSpace);
 
     // start a little behind pixel 0.
     double start = pixToY(height-1, z) - delta;
@@ -231,13 +224,13 @@ static inline void GetLabel(char *label, size_t LEN,
 
 static inline void DrawVGrid(cairo_t *cr,
         double lineWidth/*vertical line width in pixels*/, 
-        struct QsZoom *z, double width, double height,
+        struct QsZoom *z, struct QsGraph *g,
         double fontSize, double start,
         double delta) {
 
     cairo_set_line_width(cr, lineWidth);
 
-    double end = pixToX(width, z) + delta;
+    double end = pixToX(g->width + 2*g->padX, z) + delta;
 
     // TODO: Optimize performance in this loop.
     //
@@ -245,24 +238,21 @@ static inline void DrawVGrid(cairo_t *cr,
 
         double pix = xToPix(x, z);
         cairo_move_to(cr, pix, 0);
-        cairo_line_to(cr, pix , height);
+        cairo_line_to(cr, pix , g->height + 2*g->padY);
         cairo_stroke(cr);
     }
 }
 
 static inline void DrawVGridLabels(cairo_t *cr,
         double lineWidth/*vertical line width in pixels*/, 
-        struct QsZoom *z, double width, double height,
+        struct QsZoom *z, struct QsGraph *g,
         double fontSize, double start,
         double delta, int32_t pow) {
 
-    double end = pixToX(width, z) + delta;
+    double end = pixToX(g->width + 2*g->padX, z) + delta;
 
     const size_t T_SIZE = 32;
     char label[T_SIZE];
-
-    double textY = height - fontSize;
-    if(height < 2*fontSize) textY = fontSize;
 
     lineWidth *= 0.8;
 
@@ -279,13 +269,17 @@ static inline void DrawVGridLabels(cairo_t *cr,
 
         double pix = xToPix(x, z);
         GetLabel(label, T_SIZE, x, exp10pow, pow);
-        cairo_move_to(cr, pix + lineWidth, textY);
+        cairo_move_to(cr, pix + lineWidth, 
+            g->height + g->padY - lineWidth);
         cairo_show_text(cr, label);
 
-        cairo_move_to(cr, pix + lineWidth, textY - height/3);
+        if(g->height < 2*fontSize) continue;
+
+        cairo_move_to(cr, pix + lineWidth, g->padY - lineWidth);
         cairo_show_text(cr, label);
 
-        cairo_move_to(cr, pix + lineWidth, textY - 2*height/3);
+        cairo_move_to(cr, pix + lineWidth,
+            g->height + 2 * g->padY - lineWidth);
         cairo_show_text(cr, label);
     }
 }
@@ -293,7 +287,7 @@ static inline void DrawVGridLabels(cairo_t *cr,
 
 static inline void DrawHGrid(cairo_t *cr,
         double lineWidth/*vertical line width in pixels*/, 
-        struct QsZoom *z, double width, double height,
+        struct QsZoom *z, struct QsGraph *g,
         double fontSize, double start,
         double delta) {
 
@@ -307,7 +301,7 @@ static inline void DrawHGrid(cairo_t *cr,
 
         double pix = yToPix(y, z);
         cairo_move_to(cr, 0, pix);
-        cairo_line_to(cr, width, pix);
+        cairo_line_to(cr, g->width + 2*g->padX, pix);
         cairo_stroke(cr);
     }
 }
@@ -315,7 +309,7 @@ static inline void DrawHGrid(cairo_t *cr,
 
 static inline void DrawHGridLabels(cairo_t *cr,
         double lineWidth/*vertical line width in pixels*/, 
-        struct QsZoom *z, double width, double height,
+        struct QsZoom *z, struct QsGraph *g,
         double fontSize, double start,
         double delta, int32_t pow) {
 
@@ -344,10 +338,10 @@ static inline void DrawHGridLabels(cairo_t *cr,
         cairo_move_to(cr, textX, pix - lineWidth - 1);
         cairo_show_text(cr, label);
 
-        cairo_move_to(cr, textX + width/3, pix - lineWidth - 1);
+        cairo_move_to(cr, textX + g->padX, pix - lineWidth - 1);
         cairo_show_text(cr, label);
 
-        cairo_move_to(cr, textX + 2*width/3, pix - lineWidth - 1);
+        cairo_move_to(cr, textX + g->padX + g->width, pix - lineWidth - 1);
         cairo_show_text(cr, label);
      }
 }
@@ -366,12 +360,11 @@ void DrawGrids(struct QsGraph *g, cairo_t *cr, bool show_subGrid) {
     int32_t powX, powY;
 
     deltaX = GetVGrid(cr, lineWidth, 140, g->zoom,
-            g->width, g->height, fontSize, &startX,
-            &subDividerX, &powX);
+            fontSize, &startX, &subDividerX, &powX);
 
     deltaY = GetHGrid(cr, lineWidth, 140, g->zoom,
-            g->width, g->height, fontSize, &startY,
-            &subDividerY, &powY);
+            g->width + 2*g->padX, g->height + 2*g->padY,
+            fontSize, &startY, &subDividerY, &powY);
 
 
     if(!show_subGrid)
@@ -384,26 +377,32 @@ void DrawGrids(struct QsGraph *g, cairo_t *cr, bool show_subGrid) {
         case 10:
             cairo_set_line_width(cr, 1.5);
             DrawVSubGrid(cr, g->zoom, startX, deltaX/10.0,
-                    pixToX(g->width, g->zoom) + deltaX, g->height);
+                    pixToX(g->width + 2*g->padX, g->zoom) + deltaX,
+                    g->height + 2*g->padY);
             cairo_set_line_width(cr, 4.0);
             DrawVSubGrid(cr, g->zoom, startX + deltaX/2, deltaX,
-                    pixToX(g->width, g->zoom) + deltaX, g->height);
+                    pixToX(g->width + 2*g->padX, g->zoom) + deltaX,
+                    g->height + 2*g->padY);
             break;
         case 5:
             cairo_set_line_width(cr, 4.0);
             DrawVSubGrid(cr, g->zoom, startX, deltaX/5.0,
-                    pixToX(g->width, g->zoom) + deltaX, g->height);
+                    pixToX(g->width + 2*g->padX, g->zoom) + deltaX,
+                    g->height + 2*g->padY);
             cairo_set_line_width(cr, 0.7);
             DrawVSubGrid(cr, g->zoom, startX, deltaX/10.0,
-                    pixToX(g->width, g->zoom) + deltaX, g->height);
+                    pixToX(g->width + 2*g->padX, g->zoom) + deltaX,
+                    g->height + 2*g->padY);
             break;
         case 2:
             cairo_set_line_width(cr, 4.2);
             DrawVSubGrid(cr, g->zoom, startX + deltaX/2, deltaX,
-                    pixToX(g->width, g->zoom) + deltaX, g->height);
+                    pixToX(g->width + 2*g->padX, g->zoom) + deltaX,
+                    g->height + 2*g->padY);
             cairo_set_line_width(cr, 1.5);
             DrawVSubGrid(cr, g->zoom, startX, deltaX/10.0,
-                    pixToX(g->width, g->zoom) + deltaX, g->height);
+                    pixToX(g->width+ 2*g->padX, g->zoom) + deltaX,
+                    g->height + 2*g->padY);
             break;
         default:
             ASSERT(0, "Bad Code");
@@ -415,26 +414,32 @@ void DrawGrids(struct QsGraph *g, cairo_t *cr, bool show_subGrid) {
         case 10:
             cairo_set_line_width(cr, 1.5);
             DrawHSubGrid(cr, g->zoom, startY, deltaY/10.0,
-                    pixToY(0, g->zoom) + deltaY, g->width);
+                    pixToY(0, g->zoom) + deltaY,
+                    g->width + 2*g->padX);
             cairo_set_line_width(cr, 4.0);
             DrawHSubGrid(cr, g->zoom, startY + deltaY/2, deltaY,
-                    pixToY(0, g->zoom) + deltaY, g->width);
+                    pixToY(0, g->zoom) + deltaY,
+                    g->width + 2*g->padX);
             break;
         case 5:
             cairo_set_line_width(cr, 4.0);
             DrawHSubGrid(cr, g->zoom, startY, deltaY/5.0,
-                    pixToY(0, g->zoom) + deltaY, g->width);
+                    pixToY(0, g->zoom) + deltaY,
+                    g->width + 2*g->padX);
             cairo_set_line_width(cr, 0.7);
             DrawHSubGrid(cr, g->zoom, startY, deltaY/10.0,
-                    pixToY(0, g->zoom) + deltaY, g->width);
+                    pixToY(0, g->zoom) + deltaY,
+                    g->width + 2*g->padX);
             break;
         case 2:
             cairo_set_line_width(cr, 4.2);
             DrawHSubGrid(cr, g->zoom, startY + deltaY/2, deltaY,
-                    pixToY(0, g->zoom) + deltaY, g->width);
+                    pixToY(0, g->zoom) + deltaY,
+                    g->width + 2*g->padX);
             cairo_set_line_width(cr, 1.5);
             DrawHSubGrid(cr, g->zoom, startY, deltaY/10.0,
-                    pixToY(0, g->zoom) + deltaY, g->width);
+                    pixToY(0, g->zoom) + deltaY,
+                    g->width + 2*g->padX);
             break;
         default:
             ASSERT(0, "Bad Code");
@@ -445,16 +450,16 @@ drawGrid:
 
     cairo_set_source_rgb(cr,
             g->gridColor.r, g->gridColor.g, g->gridColor.b);
-    DrawVGrid(cr, lineWidth, g->zoom, g->width, g->height,
+    DrawVGrid(cr, lineWidth, g->zoom, g,
             fontSize, startX, deltaX);
-    DrawHGrid(cr, lineWidth, g->zoom, g->width, g->height,
+    DrawHGrid(cr, lineWidth, g->zoom, g,
             fontSize, startY, deltaY);
 
     cairo_set_source_rgb(cr,
             g->axesLabelColor.r, g->axesLabelColor.g,
             g->axesLabelColor.b);
-    DrawVGridLabels(cr, lineWidth, g->zoom, g->width, g->height,
+    DrawVGridLabels(cr, lineWidth, g->zoom, g,
             fontSize, startX, deltaX, powX);
-    DrawHGridLabels(cr, lineWidth, g->zoom, g->width, g->height,
+    DrawHGridLabels(cr, lineWidth, g->zoom, g,
             fontSize, startY, deltaY, powY);
 }

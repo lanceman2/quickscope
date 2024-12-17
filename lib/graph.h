@@ -3,8 +3,10 @@ struct QsZoom {
 
     struct QsZoom *prev, *next; // To keep a list of zooms
 
-    double xMin, xMax, xSlope/*=(xMax - xMin)/pixWidth*/;
-    double yMin, yMax, ySlope/*=(yMin - yMax)/pixHeight*/;
+    double xSlope/* = (xMax - xMin)/pixWidth */;
+    double ySlope/* = (yMin - yMax)/pixHeight */;
+    double xShift/* = xMin - g->padX * z->xSlope */;
+    double yShift/* = yMax - g->padY * z->ySlope */;
 };
 
 struct QsColor {
@@ -24,7 +26,7 @@ struct QsGraph {
     GtkWidget *vbox;
     GtkWidget *drawingArea;
 
-    cairo_surface_t *bgSurface; // background
+    cairo_surface_t *bgSurface; // background with grid lines and labels
     cairo_surface_t *fgSurface; // foreground with plots
 
     cairo_surface_t *zoomBoxSurface;
@@ -32,9 +34,17 @@ struct QsGraph {
     GtkWidget *controlbar; // gtk entry widget
     GtkStatusbar *statusbar;
 
+    // User values on the edges of the drawing area.
     double xMin, xMax, yMin, yMax;
 
-    int width, height; // drawing area in pixels
+    // padX, padY is padding size added to drawingArea to make bgSuface
+    // and fgSurface.  The padding is added to each of the 4 sides of
+    // bgSuface and fgSurface.  The width and height of bgSuface and
+    // fgSurface is width + 2 * padX and height + 2 * padY.
+    //
+    int padX, padY;
+    // width and height of drawingArea widget.
+    int width, height;
 
     struct QsZoom *top;  // first zoom level
     struct QsZoom *zoom; // current zoom level
@@ -96,18 +106,27 @@ extern void FixZoomsShift(struct QsGraph *g, double dx, double dy);
 
 // TODO: Can we use SIMD parallel processing for all this arithmetic?
 
+
+// These are mappings to pixels on the bgSurface and fgSurface.
+
 static inline double xToPix(double x, struct QsZoom *z) {
-    return (x - z->xMin) / z->xSlope;
+    //return (x - z->xMin) / z->xSlope + g->padX;
+    //return x / z->xSlope + g->padX - z->xMin / z->xSlope
+    return (x - z->xShift)/z->xSlope;
 }
 
 static inline double pixToX(double p, struct QsZoom *z) {
-    return p * z->xSlope + z->xMin;
+    //return (p - g->padX) * z->xSlope + z->xMin;
+    //return p * z->xSlope + z->xMin - g->padX * z->xSlope;
+    return p * z->xSlope + z->xShift;
 }
 
 static inline double yToPix(double y, struct QsZoom *z) {
-    return (y - z->yMax) / z->ySlope;
+    //return (y - z->yMax) / z->ySlope + g->padY;
+    return (y - z->yShift)/z->ySlope;
 }
 
 static inline double pixToY(double p, struct QsZoom *z) {
-    return p * z->ySlope + z->yMax;
+    //return (p - g->padY) * z->ySlope + z->yMax;
+    return p * z->ySlope + z->yShift;
 }
