@@ -303,21 +303,8 @@ static gboolean drawingArea_draw_cb(GtkWidget *w,
     //DSPEW();
 
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-
-    double x, y;
-    const double wp = - 2 * g->padX;
-    const double hp = - 2 * g->padY;
-
-    x = - g->padX - g->x0 + g->x;
-    y = - g->padY - g->y0 + g->y;
-
-    if(x < wp) x = wp;
-    else if(x > 0.0) x = 0.0;
-
-    if(y < hp) y = hp;
-    else if(y > 0.0) y = 0.0;
-
-    cairo_set_source_surface(cr, g->bgSurface, x, y);
+    cairo_set_source_surface(cr, g->bgSurface,
+            - g->padX + g->slideX, - g->padY + g->slideY);
     cairo_paint(cr);
 
     if(g->haveZoomBox) {
@@ -400,10 +387,10 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
     // TODO: Find the extreme values that may be plotted.
     //
     // Setup graph/plot scale to start with:
-    g->xMin = -2.24e5;
-    g->xMax = 1.3e+5;
-    g->yMin = -1.0e-1;
-    g->yMax = 1.0e-1;
+    g->xMin = -2.24e3;
+    g->xMax = 1.3e+3;
+    g->yMin = -1.0e-2;
+    g->yMax = 1.0e-2;
 
 #if 0
     g->xMin = 0;

@@ -4,7 +4,6 @@
 #include <string.h>
 #include <inttypes.h>
 #include <float.h>
-#include <math.h>
 
 #include <gtk/gtk.h>
 
@@ -16,7 +15,11 @@
 
 
 static GdkWindow *window = 0;
+static double x0, y0; // pointer position at the start of an zoom action
 
+// Mark that we are doing a thing.  Since there is just one window
+// focus we can use a global variable like this:
+uint32_t zoom_action;
 
 gboolean graph_buttonPress_cb(GtkWidget *drawingArea,
         GdkEventButton *e, struct QsGraph *g) {
@@ -25,20 +28,20 @@ gboolean graph_buttonPress_cb(GtkWidget *drawingArea,
   DASSERT(drawingArea);
   DASSERT(g->drawingArea == drawingArea);
 
-  if(g->zoom_action)
+  if(zoom_action)
     // Do nothing if there are actions already underway.  Example:
     // pressing another button while one is already pressed.
     return TRUE;
 
   if(e->button == SLIDE_BUTTON) {
       // Mark the action as running.
-      g->zoom_action = SLIDE_ACTION;
+      zoom_action = SLIDE_ACTION;
       window = gtk_widget_get_window(drawingArea);
       DASSERT(window);
       gdk_window_set_cursor(window, hand_cursor);
       // record starting position
-      g->x0 = e->x;
-      g->y0 = e->y;
+      x0 = e->x;
+      y0 = e->y;
   }
 
   return TRUE; // TRUE -> eat the event
@@ -51,24 +54,24 @@ gboolean graph_buttonRelease_cb(GtkWidget *drawingArea,
   DASSERT(drawingArea);
   DASSERT(g->drawingArea == drawingArea);
 
-  if(!g->zoom_action)
+  if(!zoom_action)
     // Do nothing if there no actions currently underway.  It may be that
     // we got two buttons pressed and this is the release of the button
     // that got no action because another button was pressed while that
     // button was pressed.
     return TRUE;
 
-  if(e->button == SLIDE_BUTTON && (g->zoom_action & SLIDE_ACTION)) {
+  if(e->button == SLIDE_BUTTON && (zoom_action & SLIDE_ACTION)) {
       DASSERT(window);
       gdk_window_set_cursor(window, 0);
       window = 0;
       // Mark the action as done.
-      g->zoom_action &= ~SLIDE_ACTION;
+      zoom_action &= ~SLIDE_ACTION;
 
       double dx, dy;
-      dx = g->x0 - e->x;
-      dy = g->y0 - e->y;
-        
+      dx = x0 - e->x;
+      dy = y0 - e->y;
+
       if(dx > g->padX)
           dx = g->padX;
       else if(dx < - g->padX)
@@ -78,9 +81,10 @@ gboolean graph_buttonRelease_cb(GtkWidget *drawingArea,
       else if(dy < - g->padY)
           dy = - g->padY;
 
+      x0 = y0 = g->slideX = g->slideY = 0;
+
       FixZoomsShift(g, dx, dy);
-      g->x0 = g->y0 = g->x = g->y = 0.0;
-      DASSERT(!g->zoom_action, "We have multi button press actions??");
+      DASSERT(!zoom_action, "We have multi button press actions??");
   }
 
   return TRUE;
@@ -104,11 +108,20 @@ gboolean graph_pointerMotion_cb(GtkWidget *drawingArea, GdkEventMotion *e,
 
   //DSPEW("x,y=%g,%g", e->x, e->y);
 
-    if(g->zoom_action & SLIDE_ACTION) {
+    if(zoom_action & SLIDE_ACTION) {
 
-        //DSPEW("SLIDE x,y=%g,%g", e->x, e->y);
-        g->x = e->x;
-        g->y = e->y;
+        g->slideX = e->x - x0;
+        g->slideY = e->y - y0;
+  
+        if(g->slideX > g->padX)
+            g->slideX = g->padX;
+        else if(g->slideX < - g->padX)
+            g->slideX = - g->padX;
+        if(g->slideY > g->padY)
+            g->slideY = g->padY;
+        else if(g->slideY < - g->padY)
+            g->slideY = - g->padY;
+
         gtk_widget_queue_draw(drawingArea);
     }
 

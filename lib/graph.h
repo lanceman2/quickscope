@@ -51,11 +51,11 @@ struct QsGraph {
 
     struct QsColor bgColor, gridColor, subGridColor, axesLabelColor;
 
-    // Mark that we are doing a thing.  Since there is just one window
-    // focus we can use a global variable like this:
-    uint32_t zoom_action;
-    double x0, y0; // pointer position at the start of an zoom action
-    double x, y; // pointer position in current zoom action
+    // slideX and slideY are set when the graph is being moved via the
+    // left (1) button press and pointer motion.  They go to zero when the
+    // graph slide action is finished, the graph zooms are
+    // recalculated, and the graph is redrawn.
+    double slideX, slideY;
 
     bool controlbar_showing;
     bool statusbar_showing;
