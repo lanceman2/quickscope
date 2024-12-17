@@ -94,11 +94,9 @@ gboolean graph_pointerMotion_cb(GtkWidget *drawingArea, GdkEventMotion *e,
 
     if(g->zoom_action & SLIDE_ACTION) {
 
-        DSPEW("SLIDE x,y=%g,%g", e->x, e->y);
-
+        //DSPEW("SLIDE x,y=%g,%g", e->x, e->y);
         g->x = e->x;
         g->y = e->y;
-
         gtk_widget_queue_draw(drawingArea);
     }
 

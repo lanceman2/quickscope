@@ -150,10 +150,10 @@ void FixZoomsShift(struct QsGraph *g, double dx, double dy) {
 
     if(dx == 0.0 && dy == 0.0) return;
 
-    g->xMin += dx * g->zoom->xSlope;
-    g->xMax += dx * g->zoom->xSlope;
-    g->yMin += dy * g->zoom->ySlope;
-    g->yMax += dy * g->zoom->ySlope;
+    g->xMin += dx * g->top->xSlope;
+    g->xMax += dx * g->top->xSlope;
+    g->yMin += dy * g->top->ySlope;
+    g->yMax += dy * g->top->ySlope;
 
     DASSERT(g->zoom);
     for(struct QsZoom *z = g->top; z; z = z->next) {
