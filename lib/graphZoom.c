@@ -50,8 +50,6 @@ gboolean graph_buttonRelease_cb(GtkWidget *drawingArea,
   DASSERT(g);
   DASSERT(drawingArea);
   DASSERT(g->drawingArea == drawingArea);
-  // We assume there was a button press, where we got the window.
-  DASSERT(window);
 
   if(!g->zoom_action)
     // Do nothing if there no actions currently underway.  It may be that
