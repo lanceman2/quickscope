@@ -121,7 +121,7 @@ static void Destroy_cb(GtkWidget *widget, struct QsGraph *g) {
         g->bgSurface = 0;
     }
 
-    // Free all the zooms.
+    // Free the added zooms without queue redraws.
     if(g->zoom)
         while(_PopZoom(g));
 
