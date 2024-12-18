@@ -122,7 +122,8 @@ static void Destroy_cb(GtkWidget *widget, struct QsGraph *g) {
     }
 
     // Free all the zooms.
-    while(_PopZoom(g));
+    if(g->zoom)
+        while(_PopZoom(g));
 
     if(g->top) {
         // Free the last zoom too.
@@ -396,14 +397,13 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
 
 
     // TODO: Find the extreme values that may be plotted.
-    //
+#if 0
     // Setup graph/plot scale to start with:
     g->xMin = -2.24e3;
     g->xMax = 1.3e+3;
     g->yMin = -1.0e-2;
     g->yMax = 1.0e-2;
-
-#if 0
+#else
     g->xMin = 0;
     g->xMax = 1;
     g->yMin = 0;
