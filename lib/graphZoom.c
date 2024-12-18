@@ -14,6 +14,15 @@
 #include "graph.h"
 
 
+#define SLIDE_BUTTON     1 /*1 -> left*/
+#define BOX_BUTTON       3 /*3 -> right*/
+
+
+#define SLIDE_ACTION    01  // sliding the graph with the pointer
+#define BOX_ACTION      02  // sliding the graph with the pointer
+
+
+
 static GdkWindow *window = 0;
 static double x0, y0; // pointer position at the start of an zoom action
 
@@ -43,6 +52,15 @@ gboolean graph_buttonPress_cb(GtkWidget *drawingArea,
       x0 = e->x;
       y0 = e->y;
   }
+
+  if(e->button == BOX_BUTTON) {
+      // Mark the action as running.
+      zoom_action = BOX_ACTION;
+      // record starting position
+      x0 = e->x;
+      y0 = e->y;
+  }
+
 
   return TRUE; // TRUE -> eat the event
 }
@@ -87,6 +105,12 @@ gboolean graph_buttonRelease_cb(GtkWidget *drawingArea,
       DASSERT(!zoom_action, "We have multi button press actions??");
   }
 
+  if(e->button == BOX_BUTTON && (zoom_action & BOX_ACTION)) {
+
+      DSPEW("Zoom box finished");
+      zoom_action &= ~BOX_ACTION;
+  }
+ 
   return TRUE;
 }
 
