@@ -98,6 +98,7 @@ void AddCSS(void);
 ////////////////////////////////////////////////////////////
 // Some callbacks.
 //
+extern void popZoom_cb(void);
 extern void showHideMenubar_cb(void);   // toggle between show and hide
 extern void showHideButtonbar_cb(void); // toggle between show and hide
 extern void showHideTabbar_cb(void);    // toggle between show and hide

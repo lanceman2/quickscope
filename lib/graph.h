@@ -15,10 +15,6 @@ struct QsColor {
 };
 
 
-#define SLIDE_BUTTON     1 /*1 -> left*/
-
-#define SLIDE_ACTION    01  // sliding the graph with the pointer
-
 
 struct QsGraph {
 
@@ -51,6 +47,8 @@ struct QsGraph {
 
     struct QsColor bgColor, gridColor, subGridColor, axesLabelColor;
 
+    uint32_t zoomCount;
+      
     // slideX and slideY are set when the graph is being moved via the
     // left (1) button press and pointer motion.  They go to zero when the
     // graph slide action is finished, the graph zooms are
@@ -68,7 +66,7 @@ static inline struct QsGraph *GetCurrentGraph(void) {
     struct QsWindow *w = GetCurrentWindow();
     DASSERT(w->gtkNotebook);
     int page = gtk_notebook_get_current_page(w->gtkNotebook);
-    DSPEW("page=%d", page);
+    //DSPEW("page=%d", page);
     DASSERT(page >= 0);
     GtkWidget *vbox = gtk_notebook_get_nth_page(w->gtkNotebook, page);
     DASSERT(vbox);
@@ -77,6 +75,8 @@ static inline struct QsGraph *GetCurrentGraph(void) {
     DASSERT(g->vbox == vbox);
     return g;
 }
+
+extern uint32_t zoom_action;
 
 extern void ShowTabPopupMenu(struct QsGraph *g, int x, int y);
 extern void CreatePopoverMenu(void);
@@ -102,31 +102,35 @@ extern gboolean graph_pointerEnter_cb(GtkWidget *drawingArea,
 extern gboolean graph_pointerLeave_cb(GtkWidget *drawingArea,
         GdkEvent *e, struct QsGraph *g);
 
-extern void FixZoomsShift(struct QsGraph *g, double dx, double dy);
+
+extern void PushZoom(struct QsGraph *g,
+        double xMin, double xMax, double yMin, double yMax);
+// Returns true if there are zooms left to pop after this call.
+extern bool PopZoom(struct QsGraph *g);
+extern void PrintStatusbar(struct QsGraph *g, double xPix, double yPix);
+
+
 
 // TODO: Can we use SIMD parallel processing for all this arithmetic?
 
 
-// These are mappings to pixels on the bgSurface and fgSurface.
+// These are mappings to pixels on the bgSurface and fgSurface.  The
+// bgSurface and fgSurface are padded to a larger size than the size of
+// the drawing area, by plus padX to either size in X and plus padY to
+// either side in Y.
 
 static inline double xToPix(double x, struct QsZoom *z) {
-    //return (x - z->xMin) / z->xSlope + g->padX;
-    //return x / z->xSlope + g->padX - z->xMin / z->xSlope
     return (x - z->xShift)/z->xSlope;
 }
 
 static inline double pixToX(double p, struct QsZoom *z) {
-    //return (p - g->padX) * z->xSlope + z->xMin;
-    //return p * z->xSlope + z->xMin - g->padX * z->xSlope;
     return p * z->xSlope + z->xShift;
 }
 
 static inline double yToPix(double y, struct QsZoom *z) {
-    //return (y - z->yMax) / z->ySlope + g->padY;
     return (y - z->yShift)/z->ySlope;
 }
 
 static inline double pixToY(double p, struct QsZoom *z) {
-    //return (p - g->padY) * z->ySlope + z->yMax;
     return p * z->ySlope + z->yShift;
 }

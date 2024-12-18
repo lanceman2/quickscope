@@ -85,6 +85,9 @@ static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
             mod_keys |= MOD_SHIFT;
             return TRUE;
 
+        case PopZoom_key:
+            popZoom_cb();
+            return TRUE;
         case ShowHideTabbar_key:
             showHideTabbar_cb();
             return TRUE;
@@ -98,7 +101,7 @@ static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
             showHideControlbar_cb();
             return TRUE;
         case ShowHideStatusbar_key:
-   showHideStatusbar_cb();
+            showHideStatusbar_cb();
             return TRUE;
           case NewWindow_key:
             newWindow_cb();

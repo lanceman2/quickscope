@@ -25,12 +25,28 @@ static void pressed_cb(GtkGestureClick *gesture,
 }
 #endif
 
+void PrintStatusbar(struct QsGraph *g, double xPix, double yPix) {
+
+    // Record the pointer plot x y values in the status bar:
+    //guint id = gtk_statusbar_get_context_id(g->statusbar, "info");
+    const size_t LEN = 64;
+    char text[LEN];
+    if(isnormal(xPix) && isnormal(yPix))
+        snprintf(text, LEN, "zoom[%"PRIu32"] %g  %g", g->zoomCount,
+                pixToX(xPix, g->zoom), pixToY(yPix, g->zoom));
+    else
+        snprintf(text, LEN, "zoom[%"PRIu32"]", g->zoomCount);
+
+    gtk_statusbar_push(g->statusbar, 0, text);
+}
+
+
 // Return true if there are still zooms to pop.
 //
 // We do not pop (free) the last one; unless we are destroying the graph.
 // We need to keep the last one so we can draw something.
 //
-static inline bool PopZoom(struct QsGraph *g) {
+static inline bool _PopZoom(struct QsGraph *g) {
 
     DASSERT(g->zoom);
     DASSERT(g->top);
@@ -51,11 +67,41 @@ static inline bool PopZoom(struct QsGraph *g) {
     struct QsZoom *z = g->zoom;
     g->zoom = z->prev;
     g->zoom->next = 0;
+    --g->zoomCount;
  
     DZMEM(z, sizeof(*z));
     free(z);
 
     return (g->zoom == g->top)?false:true;
+}
+
+static inline void DrawBgSurface(struct QsGraph *g) {
+
+    DASSERT(g);
+    DASSERT(g->bgSurface);
+
+    cairo_t *cr = cairo_create(g->bgSurface);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_rgb(cr, g->bgColor.r, g->bgColor.g, g->bgColor.b);
+    cairo_paint(cr);
+    DrawGrids(g, cr, true/*show subGrid*/);
+    cairo_destroy(cr);
+}
+
+
+// Returns true if there are zooms left to pop after this call.
+//
+bool PopZoom(struct QsGraph *g) {
+
+    if(g->zoom == g->top)
+        // No need to redraw.
+        return false;
+
+    bool ret = _PopZoom(g);
+    DrawBgSurface(g);
+    PrintStatusbar(g, NAN, NAN);
+    gtk_widget_queue_draw(g->drawingArea);
+    return ret;
 }
 
 static void Destroy_cb(GtkWidget *widget, struct QsGraph *g) {
@@ -76,7 +122,7 @@ static void Destroy_cb(GtkWidget *widget, struct QsGraph *g) {
     }
 
     // Free all the zooms.
-    while(PopZoom(g));
+    while(_PopZoom(g));
 
     if(g->top) {
         // Free the last zoom too.
@@ -89,8 +135,7 @@ static void Destroy_cb(GtkWidget *widget, struct QsGraph *g) {
     free(g);
 }
 
-
-static struct QsZoom *PushZoom(struct QsGraph *g,
+static inline void _PushZoom(struct QsGraph *g,
         double xMin, double xMax, double yMin, double yMax) {
 
     struct QsZoom *z = malloc(sizeof(*z));
@@ -108,6 +153,7 @@ static struct QsZoom *PushZoom(struct QsGraph *g,
         DASSERT(!g->zoom->next);
         g->zoom->next = z;
         z->prev = g->zoom;
+        ++g->zoomCount;
     } else {
         DASSERT(!g->top);
         z->prev = 0;
@@ -116,51 +162,16 @@ static struct QsZoom *PushZoom(struct QsGraph *g,
     z->next = 0;
     // The current zoom (g->zoom) is always the last one, is this one.
     g->zoom = z;
-
-    return z;
-}
-
-
-static inline void DrawBgSurface(struct QsGraph *g) {
-
-    DASSERT(g);
-    DASSERT(g->bgSurface);
-
-    cairo_t *cr = cairo_create(g->bgSurface);
-    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_rgb(cr, g->bgColor.r, g->bgColor.g, g->bgColor.b);
-    cairo_paint(cr);
-    DrawGrids(g, cr, true/*show subGrid*/);
-    cairo_destroy(cr);
 }
 
 
 
-// The view of the drawing area moved dx, dy, and did not change size.
-// It just shifted position.
-//
-void FixZoomsShift(struct QsGraph *g, double dx, double dy) {
+void PushZoom(struct QsGraph *g,
+        double xMin, double xMax, double yMin, double yMax) {
 
-    DASSERT(g);
-    DASSERT(g->top);
-    DASSERT(g->zoom);
-    DASSERT(g->xMin < g->xMax);
-    DASSERT(g->yMin < g->yMax);
-
-    if(dx == 0.0 && dy == 0.0) return;
-
-    g->xMin += dx * g->top->xSlope;
-    g->xMax += dx * g->top->xSlope;
-    g->yMin += dy * g->top->ySlope;
-    g->yMax += dy * g->top->ySlope;
-
-    DASSERT(g->zoom);
-    for(struct QsZoom *z = g->top; z; z = z->next) {
-        z->xShift += dx * z->xSlope;
-        z->yShift += dy * z->ySlope;
-    }
-
+    _PushZoom(g, xMin, xMax, yMin, yMax);
     DrawBgSurface(g);
+    PrintStatusbar(g, NAN, NAN);
     gtk_widget_queue_draw(g->drawingArea);
 }
 
@@ -252,7 +263,7 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
         GetPadding(a.width, a.height, &g->padX, &g->padY);
         g->width = a.width;
         g->height = a.height;
-        PushZoom(g, g->xMin, g->xMax, g->yMin, g->yMax);
+        _PushZoom(g, g->xMin, g->xMax, g->yMin, g->yMax);
     } else {
         DASSERT(g->zoom);
         FixZoomsScale(g, a.width, a.height);

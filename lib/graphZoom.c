@@ -101,7 +101,11 @@ gboolean graph_buttonRelease_cb(GtkWidget *drawingArea,
 
       x0 = y0 = g->slideX = g->slideY = 0;
 
-      FixZoomsShift(g, dx, dy);
+      PushZoom(g, // make a new zoom in the zoom stack
+              pixToX(g->padX + dx, g->zoom),
+              pixToX(g->width + g->padX + dx, g->zoom),
+              pixToY(g->height + g->padY + dy, g->zoom),
+              pixToY(g->padY + dy, g->zoom));
       DASSERT(!zoom_action, "We have multi button press actions??");
   }
 
@@ -122,14 +126,6 @@ gboolean graph_pointerMotion_cb(GtkWidget *drawingArea, GdkEventMotion *e,
   DASSERT(g->drawingArea == drawingArea);
   DASSERT(e->type == GDK_MOTION_NOTIFY);
 
-  // Record the pointer plot x y values in the status bar:
-  guint id = gtk_statusbar_get_context_id(g->statusbar, "info");
-  const size_t LEN = 32;
-  char text[LEN];
-  snprintf(text, LEN, "%g  %g",
-          pixToX(e->x, g->zoom), pixToY(e->y, g->zoom)); 
-  gtk_statusbar_push(g->statusbar, id, text);
-
   //DSPEW("x,y=%g,%g", e->x, e->y);
 
     if(zoom_action & SLIDE_ACTION) {
@@ -147,8 +143,11 @@ gboolean graph_pointerMotion_cb(GtkWidget *drawingArea, GdkEventMotion *e,
             g->slideY = - g->padY;
 
         gtk_widget_queue_draw(drawingArea);
+        return TRUE;
     }
 
+    // Record the pointer plot x y values in the status bar:
+    PrintStatusbar(g, e->x + g->padX, e->y + g->padY);
 
   return TRUE;
 }

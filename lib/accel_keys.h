@@ -11,7 +11,7 @@
 
 #define MOD_SHIFT                   01   
 
-
+#define PopZoom_key                 GDK_KEY_z
 #define ShowHideMenubar_key         GDK_KEY_m
 #define ShowHideTabbar_key          GDK_KEY_t
 #define ShowHideButtonbar_key       GDK_KEY_b

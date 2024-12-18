@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <math.h>
 
 #include <gtk/gtk.h>
 
@@ -11,6 +12,13 @@
 #include "graph.h"
 
 
+
+void popZoom_cb(void) {
+    if(zoom_action) return;
+    struct QsGraph *g = GetCurrentGraph();
+    if(!g->zoomCount) return;
+    PopZoom(g);
+}
 
 void quit_cb(void) {
     qsApp_destroy();
