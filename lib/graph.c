@@ -111,11 +111,6 @@ static void Destroy_cb(GtkWidget *widget, struct QsGraph *g) {
 
     DSPEW("Freeing graph=%p", g);
 
-    if(g->zoomBoxSurface) {
-        cairo_surface_destroy(g->zoomBoxSurface);
-        g->zoomBoxSurface = 0;
-    }
-
     if(g->bgSurface) {
         cairo_surface_destroy(g->bgSurface);
         g->bgSurface = 0;
@@ -166,9 +161,27 @@ static inline void _PushZoom(struct QsGraph *g,
 }
 
 
-
 void PushZoom(struct QsGraph *g,
         double xMin, double xMax, double yMin, double yMax) {
+
+    DASSERT(xMin < xMax);
+    DASSERT(yMin < yMax);
+
+    // Zooming can fail if the numbers get small relative difference
+    // values:
+    double rdx = fabs(2.0*(xMax - xMin)/(xMax + xMin));
+    double rdy = fabs(2.0*(yMax - yMin)/(yMax + yMin));
+    if(rdx < 1.0e-8 || rdy < 1.0e-8) {
+        // The double has about 15 decimal digits precision, and we need
+        // some precision (bits) to use for converting numbers so we can
+        // plot them.
+        NOTICE("Failed to make a new zoom due to "
+                "lack of relative number differences.\n"
+                "The relative difference in x and y about: "
+                "%.3g and %.3g", rdx, rdy);
+        gtk_widget_queue_draw(g->drawingArea);
+        return;
+    }
 
     _PushZoom(g, xMin, xMax, yMin, yMax);
     DrawBgSurface(g);
@@ -179,7 +192,6 @@ void PushZoom(struct QsGraph *g,
 
 static inline
 void GetPadding(int width, int height, int *padX, int *padY) {
-
 
     if(width < screen_width/3)
         *padX = width;
@@ -272,8 +284,7 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
 
     if(g->bgSurface)
         cairo_surface_destroy(g->bgSurface);
-    if(g->zoomBoxSurface)
-        cairo_surface_destroy(g->zoomBoxSurface);
+
 
     g->bgSurface = gdk_window_create_similar_surface(
             gtk_widget_get_window(w),
@@ -284,20 +295,8 @@ static gboolean drawingArea_configure_cb(GtkWidget *w,
             g->width + 2 * g->padX, g->height + 2 * g->padY);
     DASSERT(g->bgSurface);
 
-    g->zoomBoxSurface = gdk_window_create_similar_surface(
-            gtk_widget_get_window(w),
-            // This must have alpha.
-            CAIRO_CONTENT_COLOR_ALPHA,
-            g->width, g->height);
-    DASSERT(g->zoomBoxSurface);
 
     DrawBgSurface(g);
-
-    cairo_t *cr = cairo_create(g->zoomBoxSurface);
-    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 0.0);
-    cairo_paint(cr);
-    cairo_destroy(cr);
 
     return TRUE; // TRUE == done processing event
 }
@@ -319,10 +318,11 @@ static gboolean drawingArea_draw_cb(GtkWidget *w,
             - g->padX + g->slideX, - g->padY + g->slideY);
     cairo_paint(cr);
 
-    if(g->haveZoomBox) {
-        cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-        cairo_set_source_surface(cr, g->zoomBoxSurface, 0, 0);
-        cairo_paint(cr);
+    if(g->zoom_action & BOX_ACTION) {
+        cairo_set_operator(cr, CAIRO_OPERATOR_DIFFERENCE);
+        cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+        cairo_rectangle(cr, g->x0, g->y0, g->x - g->x0, g->y - g->y0);
+        cairo_fill(cr);
     }
 
     return TRUE;
@@ -404,8 +404,8 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
     g->yMin = -1.0e-2;
     g->yMax = 1.0e-2;
 #else
-    g->xMin = 0;
-    g->xMax = 1;
+    g->xMin = 0.0;
+    g->xMax = 4;
     g->yMin = 0;
     g->yMax = 1;
 #endif
@@ -416,7 +416,10 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
     SetColor(&g->subGridColor, 0.4, 0.4, 0.6);
     SetColor(&g->axesLabelColor, 0.99, 0.99, 0.99);
 
-    // Do this after the graph data is setup so we know how to draw.
+    gint n = gtk_notebook_get_current_page(w->gtkNotebook);
+    ++n;
+    gtk_notebook_insert_page(w->gtkNotebook, vbox, tab, n);
+    // GTK will not switch to the page if it is not showing yet.
     gtk_widget_show_all(vbox);
-    gtk_notebook_append_page(w->gtkNotebook, vbox, tab);
+    gtk_notebook_set_current_page(w->gtkNotebook, n);
 }

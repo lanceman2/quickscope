@@ -359,11 +359,11 @@ void DrawGrids(struct QsGraph *g, cairo_t *cr, bool show_subGrid) {
     double lineWidth = 5.7;
     int32_t powX, powY;
 
-    deltaX = GetVGrid(cr, lineWidth, 140, g->zoom,
-            fontSize, &startX, &subDividerX, &powX);
+    deltaX = GetVGrid(cr, lineWidth, PIXELS_PER_MAJOR_GRID_LINE,
+            g->zoom, fontSize, &startX, &subDividerX, &powX);
 
-    deltaY = GetHGrid(cr, lineWidth, 140, g->zoom,
-            g->width + 2*g->padX, g->height + 2*g->padY,
+    deltaY = GetHGrid(cr, lineWidth, PIXELS_PER_MAJOR_GRID_LINE,
+            g->zoom, g->width + 2*g->padX, g->height + 2*g->padY,
             fontSize, &startY, &subDividerY, &powY);
 
 

@@ -1,4 +1,22 @@
 
+// The major grid lines get labeled with numbers.
+//
+// The closer together minor (sub) grid lines do not not get labeled with
+// numbers.  There's an unusual case where grid line number labels can get
+// large like for example 6.75684e-05 and the next grid line number is
+// like 6.75685e-05; note the relative difference is 1.0e-10. Math round
+// off errors start to kill the plotting at that point.
+#define PIXELS_PER_MAJOR_GRID_LINE   (160)
+
+#define SLIDE_BUTTON     1 /*1 -> left*/
+#define BOX_BUTTON       3 /*3 -> right*/
+
+
+#define SLIDE_ACTION    01  // sliding the graph with the pointer
+#define BOX_ACTION      02  // sliding the graph with the pointer
+
+
+
 struct QsZoom {
 
     struct QsZoom *prev, *next; // To keep a list of zooms
@@ -25,13 +43,22 @@ struct QsGraph {
     cairo_surface_t *bgSurface; // background with grid lines and labels
     cairo_surface_t *fgSurface; // foreground with plots
 
-    cairo_surface_t *zoomBoxSurface;
-
     GtkWidget *controlbar; // gtk entry widget
     GtkStatusbar *statusbar;
 
     // User values on the edges of the drawing area.
     double xMin, xMax, yMin, yMax;
+
+    // Mark that we are in the process of doing a zoom thing.  Since there
+    // is just one window focus we can use a global variable for this, but
+    // a GTK bug forces this variable to not be reused between graphs.  We
+    // tried making this global, but there are race conditions in GTK
+    // handling point/mouse events which caused mouse focus fuck ups.
+    // Windows got focus events out of order with the button release
+    // events.
+    uint32_t zoom_action;
+    // mouse pointer positions at a zoom action.
+    double x0, y0, x, y;
 
     // padX, padY is padding size added to drawingArea to make bgSuface
     // and fgSurface.  The padding is added to each of the 4 sides of
@@ -57,7 +84,6 @@ struct QsGraph {
 
     bool controlbar_showing;
     bool statusbar_showing;
-    bool haveZoomBox;
 };
 
 
@@ -76,7 +102,6 @@ static inline struct QsGraph *GetCurrentGraph(void) {
     return g;
 }
 
-extern uint32_t zoom_action;
 
 extern void ShowTabPopupMenu(struct QsGraph *g, int x, int y);
 extern void CreatePopoverMenu(void);
@@ -114,23 +139,23 @@ extern void PrintStatusbar(struct QsGraph *g, double xPix, double yPix);
 // TODO: Can we use SIMD parallel processing for all this arithmetic?
 
 
-// These are mappings to pixels on the bgSurface and fgSurface.  The
-// bgSurface and fgSurface are padded to a larger size than the size of
-// the drawing area, by plus padX to either size in X and plus padY to
+// These are mappings to (and from) pixels on the bgSurface and fgSurface.
+// The bgSurface and fgSurface are padded to a larger size than the size
+// of the drawing area, by plus padX to either size in X and plus padY to
 // either side in Y.
-
+//
 static inline double xToPix(double x, struct QsZoom *z) {
     return (x - z->xShift)/z->xSlope;
 }
-
+//
 static inline double pixToX(double p, struct QsZoom *z) {
     return p * z->xSlope + z->xShift;
 }
-
+//
 static inline double yToPix(double y, struct QsZoom *z) {
     return (y - z->yShift)/z->ySlope;
 }
-
+//
 static inline double pixToY(double p, struct QsZoom *z) {
     return p * z->ySlope + z->yShift;
 }

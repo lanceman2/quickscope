@@ -14,8 +14,8 @@
 
 
 void popZoom_cb(void) {
-    if(zoom_action) return;
     struct QsGraph *g = GetCurrentGraph();
+    if(g->zoom_action) return;
     if(!g->zoomCount) return;
     PopZoom(g);
 }
