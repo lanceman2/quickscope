@@ -43,7 +43,7 @@ focusOut_cb(GtkWidget *entry, GdkEventFocus *e, struct QsGraph *g) {
 
     // We just can't count on GTK not having a focus event race condition;
     // so we need to see if we marked the current focused graph, and not
-    // assume that we do.  If another graph control has the focus we do
+    // assume that we did.  If another graph control has the focus we do
     // not want to unset this flag.
     if(g->window->graphControlHasFocus == g)
         g->window->graphControlHasFocus = 0;
@@ -79,7 +79,7 @@ static gboolean keyRelease_cb(GtkWidget *entry,
 }
 
 static void destroy_cb(GtkWidget *entry, struct QsGraph *g) {
-
+    // TODO: Is this needed?
 }
 
 
