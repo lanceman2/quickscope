@@ -1,9 +1,6 @@
 
 struct QsWindow {
 
-    //GActionGroup *actions;
-    //GtkAccelGroup *accel_group;
-
     GtkWidget *menubar;   // Top Main Menu Bar
     GtkWidget *buttonbar; // H Box of the Main button bar
 
@@ -26,6 +23,9 @@ struct QsWindow {
     GtkCheckMenuItem *showHideControlbar_item;
     GtkCheckMenuItem *showHideStatusbar_item;
 
+    // We need the window to not take the key entry events when
+    // the graph entry widget needs the entry events.
+    struct QsGraph *graphControlHasFocus;
 
     GtkWindow *gtkWindow;
     GtkNotebook *gtkNotebook;

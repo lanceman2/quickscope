@@ -338,6 +338,8 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
     struct QsGraph *g = calloc(1, sizeof(*g));
     ASSERT(g, "calloc(1,%zu) failed", sizeof(*g));
 
+    g->window = w;
+
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0/*spacing*/);
     g_signal_connect(vbox, "destroy", G_CALLBACK(Destroy_cb), g);
     gtk_widget_set_name(vbox, "vbox");
@@ -346,8 +348,8 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
     DASSERT(drawingArea);
     gtk_box_pack_start(GTK_BOX(vbox), drawingArea,
             TRUE/*expand*/, TRUE/*fill*/, 0/*padding*/);
-    GtkWidget *controlbar = gtk_entry_new();
-    gtk_box_pack_start(GTK_BOX(vbox), controlbar, 
+    GtkWidget *controlbar = CreateGraphControl(g);
+    gtk_box_pack_start(GTK_BOX(vbox), controlbar,
             FALSE/*expand*/, FALSE/*fill*/, 0/*padding*/);
     GtkWidget *statusbar = gtk_statusbar_new();
     gtk_box_pack_start(GTK_BOX(vbox), statusbar,

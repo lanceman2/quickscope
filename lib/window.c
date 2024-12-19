@@ -24,6 +24,9 @@ static void DestroyWindow_cb(GtkWindow *gtkWindow, struct QsWindow *w) {
     DASSERT(w);
     DASSERT(w->gtkWindow == gtkWindow);
 
+    DASSERT(w->accel_group);
+    g_object_ref(G_OBJECT(w->accel_group));
+
     DSPEW("freeing GTK main window=%p", w->gtkWindow);
 
     FreeActions(w);
@@ -35,10 +38,10 @@ static void DestroyWindow_cb(GtkWindow *gtkWindow, struct QsWindow *w) {
 }
 
 
-static gboolean keyRelease_window_cb(GtkWidget *widget, GdkEvent *e,
-        gpointer data) {
+static gboolean keyRelease_cb(GtkWidget *widget, GdkEventKey *e,
+        struct QsWindow *win) {
 
-    switch(e->key.keyval) {
+    switch(e->keyval) {
         case GDK_KEY_Shift_L:
         case GDK_KEY_Shift_R:
             // Mark the key as not set.
@@ -46,10 +49,15 @@ static gboolean keyRelease_window_cb(GtkWidget *widget, GdkEvent *e,
             break;
     }
 
+    if(win->graphControlHasFocus)
+        // Let the graph control entry has this event.
+        // I do not know if this can happen...
+        return FALSE;
+
     return TRUE;
 }
 
-static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
+static gboolean keyPress_cb(GtkWidget *widget, GdkEventKey *e,
         struct QsWindow *win) {
     // This is something that you can no longer do (at least easily) in
     // GTK4; that is override action group events.  GtkWindow has no
@@ -60,11 +68,16 @@ static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
     DASSERT(GTK_WINDOW(widget) == win->gtkWindow);
     DASSERT(e);
 
+    if(win->graphControlHasFocus)
+        // Let the graph control entry has this event.
+        return FALSE;
+
+DSPEW();
     // Ya! This fucking works.  I can grab events before the GAction
     // bullshit fucks it up.  GTK4 can't do it this way, if at all.
 
     if(mod_keys & MOD_SHIFT) {
-        switch(e->key.keyval) {
+        switch(e->keyval) {
 
             case CloseTab_key:
                 closeTab_cb();
@@ -77,7 +90,7 @@ static gboolean keyPress_window_cb(GtkWidget *widget, GdkEvent *e,
     }
 
 
-    switch(e->key.keyval) {
+    switch(e->keyval) {
 
         case GDK_KEY_Shift_L:
         case GDK_KEY_Shift_R:
@@ -211,9 +224,9 @@ static void CreateGTKWindow_cb(GtkApplication* gApp, struct QsWindow *w) {
     gtk_widget_show(GTK_WIDGET(gtkWindow));
     g_signal_connect(gtkWindow, "destroy", G_CALLBACK(DestroyWindow_cb), w);
     g_signal_connect(gtkWindow, "key-press-event",
-            G_CALLBACK(keyPress_window_cb), w);
+            G_CALLBACK(keyPress_cb), w);
     g_signal_connect(gtkWindow, "key-release-event",
-            G_CALLBACK(keyRelease_window_cb), w);
+            G_CALLBACK(keyRelease_cb), w);
 
     AddActions(w, builder);
 

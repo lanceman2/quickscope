@@ -14,11 +14,11 @@ libquickscope.so_SOURCES :=\
  constructor.c\
  tabMenu.c\
  graph.c\
+ graphControl.c\
  DrawGrids.c\
  graphZoom.c\
  actions.c\
  callbacks.c\
- commonGtkCallbacks.c\
  cssStyle.c
 libquickscope.so_CPPFLAGS :=\
  $(GTK_CFLAGS)\

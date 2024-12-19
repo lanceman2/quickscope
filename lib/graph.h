@@ -36,6 +36,8 @@ struct QsColor {
 
 struct QsGraph {
 
+    struct QsWindow *window;
+
     GtkWidget *tab;
     GtkWidget *vbox;
     GtkWidget *drawingArea;
@@ -134,7 +136,7 @@ extern void PushZoom(struct QsGraph *g,
 extern bool PopZoom(struct QsGraph *g);
 extern void PrintStatusbar(struct QsGraph *g, double xPix, double yPix);
 
-
+extern GtkWidget *CreateGraphControl(struct QsGraph *g);
 
 // TODO: Can we use SIMD parallel processing for all this arithmetic?
 

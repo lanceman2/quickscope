@@ -160,6 +160,7 @@ void AddActions(struct QsWindow *win, GtkBuilder *builder) {
 
     gtk_widget_insert_action_group(GTK_WIDGET(win->gtkWindow), "app",
             win->actions);
+    g_object_ref(G_OBJECT(win->accel_group));
     gtk_window_add_accel_group(GTK_WINDOW(win->gtkWindow), win->accel_group);
     win->showHideMenubar_item = GTK_CHECK_MENU_ITEM(AddAccelerator(win, builder,
           "showHideMenubar_item", ShowHideMenubar_key,0 ));
