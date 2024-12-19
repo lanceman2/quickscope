@@ -413,10 +413,10 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
 #endif
 
     // set default colors
-    SetColor(&g->bgColor, 0, 0, 0);
-    SetColor(&g->gridColor, 0, 0.8, 0.1);
-    SetColor(&g->subGridColor, 0.4, 0.4, 0.6);
-    SetColor(&g->axesLabelColor, 0.99, 0.99, 0.99);
+    SetRGB(&g->bgColor, 0, 0, 0);
+    SetRGB(&g->gridColor, 0, 0.8, 0.1);
+    SetRGB(&g->subGridColor, 0.4, 0.4, 0.6);
+    SetRGB(&g->axesLabelColor, 0.99, 0.99, 0.99);
 
     gint n = gtk_notebook_get_current_page(w->gtkNotebook);
     ++n;

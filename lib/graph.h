@@ -36,6 +36,12 @@ struct QsColor {
 
 struct QsGraph {
 
+    // Having this, window, should be unnecessary, but we do not want to
+    // count on GTK not having events coming out of order, like for
+    // example the focus changes to one window while another is still
+    // processing a key press event.  We do use "the current window" in
+    // some parts of the code, but not if there could be an event race
+    // condition that could mix graphs with the wrong window.
     struct QsWindow *window;
 
     GtkWidget *tab;
@@ -109,7 +115,7 @@ extern void ShowTabPopupMenu(struct QsGraph *g, int x, int y);
 extern void CreatePopoverMenu(void);
 extern void CleanupTabPopupMenu(void);
 
-static inline void SetColor(struct QsColor *c,
+static inline void SetRGB(struct QsColor *c,
     double r, double g, double b) {
   c->r = r;
   c->g = g;
