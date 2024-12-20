@@ -406,7 +406,7 @@ void AddNewGraph(struct QsWindow *w, const char *title) {
     g->yMin = -1.0e-2;
     g->yMax = 1.0e-2;
 #else
-    g->xMin = 0.0;
+    g->xMin = 0;
     g->xMax = 4;
     g->yMin = 0;
     g->yMax = 1;
