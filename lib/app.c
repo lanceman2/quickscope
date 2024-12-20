@@ -15,6 +15,8 @@
 // We would tend not to limit the number of app objects the user can make,
 // but GTK limits it to one at a time.  It's the same shit in Qt.
 
+struct QsSource *sources = 0;
+
 bool looping = false;
 static bool needCleanup = false;
 

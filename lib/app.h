@@ -50,6 +50,9 @@ extern void AddNewGraph(struct QsWindow *w, const char *title);
 
 extern GtkApplication *app;
 
+struct QsSource;
+extern struct QsSource *sources;
+
 
 static inline void GetApp(void) {
 

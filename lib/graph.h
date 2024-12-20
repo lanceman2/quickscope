@@ -5,7 +5,9 @@
 // numbers.  There's an unusual case where grid line number labels can get
 // large like for example 6.75684e-05 and the next grid line number is
 // like 6.75685e-05; note the relative difference is 1.0e-10. Math round
-// off errors start to kill the plotting at that point.
+// off errors start to kill the "plotting" at that point.
+//
+// TODO: We should consider using 
 #define PIXELS_PER_MAJOR_GRID_LINE   (160)
 
 #define SLIDE_BUTTON     1 /*1 -> left*/
@@ -14,6 +16,78 @@
 
 #define SLIDE_ACTION    01  // sliding the graph with the pointer
 #define BOX_ACTION      02  // sliding the graph with the pointer
+
+
+enum QsChannelType {
+
+    // These are things that can be plotted in a graph.
+    QsChannelType_buffer = 0, // static buffer of values
+    QsChannelType_stream,     // sequence of values flow
+    QsChannelType_function    // 
+};
+
+
+struct QsSource {
+
+    struct QsSource *prev, *next;
+    // An array of channels:
+    struct QsChannel *channels;
+    uint32_t numChannels;
+};
+
+
+struct QsChannel {
+
+    enum QsChannelType type;
+    struct QsSource *source;
+    uint32_t num; // index into the source channel array.
+};
+
+
+struct QsBuffer {
+
+    // inherit channel
+    struct QsChannel channel;
+
+    double *values;
+    size_t numValues;
+};
+
+
+struct QsStream {
+
+    // inherit channel
+    struct QsChannel channel;
+};
+
+struct QsFunction {
+
+    // inherit channel
+    struct QsChannel channel;
+};
+
+
+struct QsPlot {
+
+    struct QsChannel *x, *y;
+};
+
+
+// Used to track the plot drawing process.
+struct QsView {
+
+    struct QsPlot *plot;
+    // Number of values that have been sampled, though we may not
+    // necessarily see them.
+    size_t numValues;
+};
+
+
+
+extern void qsPlot_restart(struct QsPlot *p);
+// We may need to inline this ???
+extern double *qsPlot_getNext(struct QsPlot *p);
+
 
 
 
@@ -27,14 +101,17 @@ struct QsZoom {
     double yShift/* = yMax - g->padY * z->ySlope */;
 };
 
-struct QsColor {
 
+struct QsColor {
   double r, g, b;
 };
 
 
-
 struct QsGraph {
+
+    // Array of plots:
+    struct QsPlot *plots;
+    uint32_t numPlots;
 
     // Having this, window, should be unnecessary, but we do not want to
     // count on GTK not having events coming out of order, like for
