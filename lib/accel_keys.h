@@ -2,10 +2,10 @@
 
 // We needed these keys to be defined in one place.  It's used in at least
 // two C source files.  So, if we change them here it should be fine so
-// long as we do not use GDK_KEY_? in any other C source files.
+// long as we do not use GDK_KEY_? in any C source files, but this one.
 
 
-// If we need to we may add a modifier key like Ctrl or Shift
+// If we need to, we may add a modifier key like Ctrl or Shift
 // for these key presses to take action.
 //
 

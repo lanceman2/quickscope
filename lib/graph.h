@@ -22,7 +22,7 @@ enum QsChannelType {
 
     // These are things that can be plotted in a graph.
     QsChannelType_buffer = 0, // static buffer of values
-    QsChannelType_stream,     // sequence of values flow
+    QsChannelType_stream,     // a sequence of values that flow
     QsChannelType_function    // 
 };
 
