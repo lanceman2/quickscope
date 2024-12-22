@@ -73,22 +73,6 @@ struct QsPlot {
 };
 
 
-// Used to track the plot drawing process.
-struct QsView {
-
-    struct QsPlot *plot;
-    // Number of values that have been sampled, though we may not
-    // necessarily see them.
-    size_t numValues;
-};
-
-
-
-extern void qsPlot_restart(struct QsPlot *p);
-// We may need to inline this ???
-extern double *qsPlot_getNext(struct QsPlot *p);
-
-
 
 
 struct QsZoom {
@@ -244,3 +228,13 @@ static inline double yToPix(double y, struct QsZoom *z) {
 static inline double pixToY(double p, struct QsZoom *z) {
     return p * z->ySlope + z->yShift;
 }
+
+
+
+extern void qsPlot_restart(struct QsPlot *p);
+
+extern double *qsPlot_getNext(struct QsPlot *p);
+
+extern void qsGraph_plot(struct QsGraph *g);
+
+

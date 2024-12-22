@@ -189,36 +189,73 @@ static inline double GetHGrid(cairo_t *cr,
 }
 
 
-static inline void StripZeros(char *label) {
+static inline char *StripZeros(char *label) {
 
     char *s = label + strlen(label) - 1;
-    while(*s == '0' &&
-        (*(s-1) >= '0' && *(s-1) <= '9')/*next is a 0 to 9 digit*/) {
+    while(*s == '0' && *(s-1) != decimal_point) {
         *s = '\0';
         --s;
     }
+
+    return s;
+}
+
+// Count the non-zero digits to the right of decimal_point
+static inline size_t CountToPoint(char *s) {
+
+    s = StripZeros(s);
+    size_t l = 0;
+    while(*s && *s != decimal_point) {
+        --s;
+        ++l;
+    }
+    return l;
 }
 
 
-static inline void GetLabel(char *label, size_t LEN,
+// Count the non-zero digits to the right of decimal_point
+static inline size_t CountLabel(char *label, size_t LEN,
         double x, double exp10pow, int32_t pow) {
+
+    if(pow >= -2 && pow <= 3) {
+        snprintf(label, LEN, "%3.4f", x);
+        return CountToPoint(label);
+    }
+
+    snprintf(label, LEN, "%4.4f", x/exp10pow);
+    return CountToPoint(label);
+}
+
+static inline void GetLabel(char *label, size_t LEN,
+        double x, double exp10pow, int32_t pow, size_t lpdp) {
 
     //snprintf(label, LEN, "%1.1e", x);
 
-    if(pow >= -1 && pow <= 3) {
+    if(pow >= -2 && pow <= 3) {
         snprintf(label, LEN, "%3.4f", x);
-        // Remove trailing zeros.
-        StripZeros(label);
+        // Remove extra digits
+        char *s = label;
+        while(*s && *s != decimal_point)
+            s++;
+        *(s + lpdp + 1) = '\0';
         return;
     }
 
     snprintf(label, LEN, "%4.4f", x/exp10pow);
-    StripZeros(label);
     size_t l = strlen(label);
-    if(!strcmp(label, "0.0"))
-        // 0.0 is special
-        return;
-    snprintf(label+l, LEN-l, "e%+d", pow);
+
+    char *s = label;
+    while(*s && *s != decimal_point)
+        s++;
+    *(s + lpdp + 1) = '\0';
+    l = strlen(label);
+    // Zero is special.  We leave the exponent off of zero.
+    //
+    // Note, the zero value was rounded to be exactly zero; otherwise it
+    // shows just the round-off cruft, if there is any.
+    //
+    if(x != 0)
+        snprintf(label+l, LEN-l, "e%+d", pow);
 }
 
 
@@ -243,6 +280,8 @@ static inline void DrawVGrid(cairo_t *cr,
     }
 }
 
+// This is the ugliest code ever written.
+//
 static inline void DrawVGridLabels(cairo_t *cr,
         double lineWidth/*vertical line width in pixels*/, 
         struct QsZoom *z, struct QsGraph *g,
@@ -259,6 +298,19 @@ static inline void DrawVGridLabels(cairo_t *cr,
     ++pow;
     double exp10pow = exp10(pow);
 
+    size_t mantissaLen = 0;
+    for(double x = start; x <= end; x += delta) {
+
+        if(fabs(x) < delta/100)
+            // With infinite precision this would not happen, but we do
+            // not have infinite precision so we'll just fix the value so
+            // that we print 0 and not something like 1.3e-32.
+            x = 0.0;
+        size_t len = CountLabel(label, T_SIZE, x, exp10pow, pow);
+        if(len > mantissaLen)
+            mantissaLen = len;
+    }
+
     for(double x = start; x <= end; x += delta) {
 
         if(fabs(x) < delta/100)
@@ -268,7 +320,7 @@ static inline void DrawVGridLabels(cairo_t *cr,
             x = 0.0;
 
         double pix = xToPix(x, z);
-        GetLabel(label, T_SIZE, x, exp10pow, pow);
+        GetLabel(label, T_SIZE, x, exp10pow, pow, mantissaLen);
         cairo_move_to(cr, pix + lineWidth, 
             g->height + g->padY - lineWidth);
         cairo_show_text(cr, label);
@@ -308,7 +360,7 @@ static inline void DrawHGrid(cairo_t *cr,
 
 
 static inline void DrawHGridLabels(cairo_t *cr,
-        double lineWidth/*vertical line width in pixels*/, 
+        double lineWidth/*line width in pixels*/, 
         struct QsZoom *z, struct QsGraph *g,
         double fontSize, double start,
         double delta, int32_t pow) {
@@ -325,6 +377,21 @@ static inline void DrawHGridLabels(cairo_t *cr,
     ++pow;
     double exp10pow = exp10(pow);
 
+    size_t mantissaLen = 0;
+    for(double x = start; x <= end; x += delta) {
+
+        if(fabs(x) < delta/100)
+            // With infinite precision this would not happen, but we do
+            // not have infinite precision so we'll just fix the value so
+            // that we print 0 and not something like 1.3e-32.
+            x = 0.0;
+        size_t len = CountLabel(label, T_SIZE, x, exp10pow, pow);
+        if(len > mantissaLen)
+            mantissaLen = len;
+        else
+            break;
+    }
+
     for(double y = start; y <= end; y += delta) {
 
         if(fabs(y) < delta/100)
@@ -334,7 +401,7 @@ static inline void DrawHGridLabels(cairo_t *cr,
             y = 0.0;
 
         double pix = yToPix(y, z);
-        GetLabel(label, T_SIZE, y, exp10pow, pow);
+        GetLabel(label, T_SIZE, y, exp10pow, pow, mantissaLen);
         cairo_move_to(cr, textX, pix - lineWidth - 1);
         cairo_show_text(cr, label);
 
@@ -346,7 +413,8 @@ static inline void DrawHGridLabels(cairo_t *cr,
      }
 }
 
-
+// TODO: There are a lot of user configurable parameters in this
+// function.
 void DrawGrids(struct QsGraph *g, cairo_t *cr, bool show_subGrid) {
 
     cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,

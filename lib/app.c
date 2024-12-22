@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <inttypes.h>
+#include <locale.h>
 
 #include <gtk/gtk.h>
 
@@ -12,8 +13,7 @@
 #include "graph.h"
 
 
-// We would tend not to limit the number of app objects the user can make,
-// but GTK limits it to one at a time.  It's the same shit in Qt.
+char decimal_point = 0;
 
 struct QsSource *sources = 0;
 
@@ -21,6 +21,8 @@ bool looping = false;
 static bool needCleanup = false;
 
 uint32_t windowCount = 0;
+// We would tend not to limit the number of app objects the user can make,
+// but GTK limits it to one at a time.  It's the same shit in Qt.
 GtkApplication *app = 0;
 int screen_width = 0, screen_height = 0;
 
@@ -81,6 +83,10 @@ void qsApp_create(int argc, char **argv, GtkApplication *a) {
 
     DSPEW();
 
+    if(!decimal_point) {
+        decimal_point = *localeconv()->decimal_point;
+        DASSERT(decimal_point);
+    }
 
     // TODO: Maybe do nothing but parse args if there are any.
     // Or maybe it's best to not allow a useless case:

@@ -94,9 +94,10 @@ extern uint32_t mod_keys;
 extern GdkCursor *hand_cursor;
 extern gint screen_width, screen_height;
 
-void CleanupCSS(void);
-void AddCSS(void);
+extern void CleanupCSS(void);
+extern void AddCSS(void);
 
+extern char decimal_point;
 
 ////////////////////////////////////////////////////////////
 // Some callbacks.
