@@ -12,7 +12,7 @@ Just starting.
 ## Dependences
 Current development is on Debian GNU/Linux 12 with a GNONE desktop.
 ``` bash
-apt install libgtk-3-dev
+apt install libgtk-3-dev libnetcdf-dev
 ```
 
 ## GUI (graphical user interface) Toolkit Programmers (RANT)

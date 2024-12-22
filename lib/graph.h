@@ -54,13 +54,13 @@ struct QsBuffer {
 };
 
 
-struct QsStream {
+struct QsFunction {
 
     // inherit channel
     struct QsChannel channel;
 };
 
-struct QsFunction {
+struct QsStream {
 
     // inherit channel
     struct QsChannel channel;
@@ -236,5 +236,4 @@ extern void qsPlot_restart(struct QsPlot *p);
 extern double *qsPlot_getNext(struct QsPlot *p);
 
 extern void qsGraph_plot(struct QsGraph *g);
-
 

@@ -199,6 +199,8 @@ C source files: lib/window.c lib/actions.c parse this file.
         <!-- start --- BUTTON BAR --------------------------------->
         <child>
           <object class="GtkBox" id="buttonbar">
+            <property name="spacing">0</property>
+
 
             <!-- button --- NEW WINDOW ---------------------------->
             <child>
@@ -214,7 +216,6 @@ C source files: lib/window.c lib/actions.c parse this file.
                       <object class="GtkImage">
                         <property name="name">buttonImage</property>
                         <property name="icon-name">window-new</property>
-                        <property name="pixel-size">32</property>
                       </object>
                     </child>
                     <child>
@@ -226,9 +227,6 @@ C source files: lib/window.c lib/actions.c parse this file.
                   </object>
                 </child>
               </object>
-            </child>
-            <child>
-              <object class="GtkSeparator"/>
             </child>
 
             <!-- button --- NEW TAB ---------------------------->
@@ -245,7 +243,6 @@ C source files: lib/window.c lib/actions.c parse this file.
                       <object class="GtkImage">
                         <property name="name">buttonImage</property>
                         <property name="icon-name">folder-new</property>
-                        <property name="pixel-size">32</property>
                       </object>
                     </child>
                     <child>
@@ -257,9 +254,6 @@ C source files: lib/window.c lib/actions.c parse this file.
                   </object>
                 </child>
               </object>
-            </child>
-            <child>
-              <object class="GtkSeparator"/>
             </child>
 
 
