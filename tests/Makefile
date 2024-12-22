@@ -1,11 +1,14 @@
 root := ..
 
 include $(root)/pkg-gtk+-3.0.make
+include $(root)/pkg-netcdf.make
+
 
 # We test that the GTK4 include flags come with the quickscope include
 # flags from the pkg-config directive: "Requires: gtk4 >= 4.8.3" without
 # installing the quickscope package:
-QS_CFLAGS := $(shell PKG_CONFIG_PATH=$(root)/lib/pkgconfig pkg-config --cflags quickscope)
+QS_CFLAGS := $(shell PKG_CONFIG_PATH=$(root)/lib/pkgconfig pkg-config\
+ --cflags quickscope)
 
 QS_LIB := -L../lib -lquickscope -Wl,-rpath=\$$ORIGIN/../lib
 
@@ -29,12 +32,16 @@ gtkDrawingArea_CPPFLAGS := $(GTK_CFLAGS)
 gtkDrawingArea_LDFLAGS := $(GTK_LDFLAGS)
 
 
-
+netCDF_wr_SOURCES := netCDF_wr.c ../lib/debug.c
+netCDF_wr_CPPFLAGS := $(NETCDF_CFLAGS)
+netCDF_wr_LDFLAGS := $(NETCDF_LDFLAGS) -lm
 
 qsApp_run_SOURCES := qsApp_run.c
 qsApp_run_LDFLAGS := $(QS_LIB)
 qsApp_run_CPPFLAGS := $(QS_CFLAGS)
 
+
+CLEANFILES := $(wildcard tmp_*)
 
 
 test: build
