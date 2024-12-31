@@ -40,6 +40,10 @@ qsApp_run_SOURCES := qsApp_run.c
 qsApp_run_LDFLAGS := $(QS_LIB)
 qsApp_run_CPPFLAGS := $(QS_CFLAGS)
 
+asciiDataWr_SOURCES := asciiDataWr.c ../lib/debug.c
+asciiDataWr_LDFLAGS := -lm
+
+
 
 CLEANFILES := $(wildcard tmp_*)
 

@@ -2,10 +2,10 @@
 
 SUBDIRS :=\
  include\
+ lib/quickscope/run\
  lib\
  bin\
  share/bash-completion/completions\
- share/quickscope/run\
  share/doc/quickscope
 
 ifneq ($(wildcard quickbuild.make),quickbuild.make)

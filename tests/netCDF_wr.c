@@ -10,7 +10,6 @@
 
 int main(void) {
 
-    WARN("%p", nc_create);
     int id = 0;
     int err = nc_create("tmp_test.nc", 0, &id);
     ASSERT(err == NC_NOERR);
@@ -37,6 +36,16 @@ int main(void) {
     }
     err = nc_close(id);
     ASSERT(err == NC_NOERR);
+
+#if 0 // Doing this and running with valgrind shows that nc_create() does
+      // not leak memory on the second call to nc_create().  Okay, fucking
+      // great, it only leaks if we dlopen() the library; which is what we
+      // wanted to do. 8 bytes + 8 bytes + 1,848 bytes.
+    err = nc_create("tmp_test2.nc", 0, &id);
+    ASSERT(err == NC_NOERR);
+    err = nc_close(id);
+    ASSERT(err == NC_NOERR);
+#endif
 
     return 0;
 }

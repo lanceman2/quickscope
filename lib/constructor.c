@@ -13,7 +13,9 @@
 
 #include "app.h"
 
-#define DIRSTR  "/"
+
+// TODO: note this is UNIX specific code with '/' of directories in file
+// paths.
 #define DIRCHR  ('/')
 
 
@@ -34,12 +36,13 @@ const char *qsResourceDir = 0;
 static int dl_callback(struct dl_phdr_info *info,
                         size_t size, void *data) {
 
-    // We use the system dl_iterate_phdr() call to get the path to
-    // the library that this code is running from and than go back
-    // two directories and add "/share/quickscope/run" to that
-    // to be the directory that has gtkbuilder files in it.
+    // We use the system dl_iterate_phdr(3) call to get the path to the
+    // library that this code is running from and than add two directories
+    // "/quickscope/run" to that to be the directory that has gtkbuilder
+    // files and other files that we need to run code in
+    // libquickscope.so.
 
-    const char *LibName = "/lib/libquickscope.so";
+    const char *LibName = "libquickscope.so";
     // If someone changes the DSO (dynamic shared object) library
     // filename, LibName, lots of things will be broken.
  
@@ -52,7 +55,7 @@ static int dl_callback(struct dl_phdr_info *info,
 
     for(const char *c = info->dlpi_name; c <= end; ++c) {
         if(0 == strncmp(c, LibName, LibNameLen)) {
-            // realpath() will allocate a string.
+            // realpath() will allocate a string that must be free()ed.
             libDir = realpath(info->dlpi_name, 0);
             ASSERT(libDir);
             // Better be a full path.
@@ -63,20 +66,23 @@ static int dl_callback(struct dl_phdr_info *info,
 
     if(libDir) {
 
-        // Truncate the path by removing the "/lib/libquickscope.so".
+        // Truncate the path by removing the "libquickscope.so".
         *(libDir + strlen(libDir) - LibNameLen) = '\0';
 
-        const char *addToPath = "/share/quickscope/run";
-        len = strlen(libDir) + strlen(addToPath) + 1;
-        char *s = malloc(len);
-        strcpy(s, libDir);
-        strcpy(s + strlen(libDir), addToPath);
-        free(libDir);
+        // TODO: note this is UNIX specific code with '/' of
+        // directories in file paths.
+
+        //                      "libquickscope.so"
+        const char *addToPath = "quickscope/run";
+        // Make sure we have enough memory for the string we are
+        // composing:
+        DASSERT(len >= strlen(libDir) + strlen(addToPath) + 1);
+        strcat(libDir, addToPath);
 
         // This extra const-ifying may save us some pain in the long run.
         // If some code tries to change it, at least they get a compile
         // error.
-        qsResourceDir = (const char *) s;
+        qsResourceDir = (const char *) libDir;
         DASSERT(qsResourceDir);
         return 1; // done
     }
@@ -97,7 +103,7 @@ static void __attribute__((constructor)) constructor(void) {
     //
     // We can put essential quickscope run files in the directory that is
     // qsResourceDir; that is the directory that this libquickscope.so
-    // file loaded from and back one: lib/../share/
+    // file loaded from and append /quickscope/run/
     if(!qsResourceDir) {
         WARN("The runtime Resource Directory was"
             " not found, setting it to \".\"");

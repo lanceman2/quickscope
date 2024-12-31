@@ -13,20 +13,6 @@
     ...
 }
 {
-    Most libraries leak
-    Memcheck:Leak
-    ...
-    obj:/lib/x86_64-linux-gnu/*
-    ...
-}
-{
-    Most libraries leak
-    Memcheck:Leak
-    ...
-    obj:/usr/lib/x86_64-linux-gnu/*
-    ...
-}
-{
    Ignore dlopen bug.
    Memcheck:Leak
    ...
