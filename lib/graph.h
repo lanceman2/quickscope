@@ -205,7 +205,8 @@ extern void PrintStatusbar(struct QsGraph *g, double xPix, double yPix);
 
 extern GtkWidget *CreateGraphControl(struct QsGraph *g);
 
-// TODO: Can we use SIMD parallel processing for all this arithmetic?
+// TODO: Can we use SIMD parallel processing for some of this
+// arithmetic?
 
 
 // These are mappings to (and from) pixels on the bgSurface and fgSurface.
@@ -233,7 +234,10 @@ static inline double pixToY(double p, struct QsZoom *z) {
 
 extern void qsPlot_restart(struct QsPlot *p);
 
+extern void qsPlot_getMinMax(struct QsPlot *p, double *min, double *max);
+
 extern double *qsPlot_getNext(struct QsPlot *p);
+
 
 extern void qsGraph_plot(struct QsGraph *g);
 
