@@ -1,5 +1,5 @@
 
-libdir := $(shell pkg-config --variable=libdir gtk4)
+libdir := $(shell pkg-config --variable=libdir gtk+-3.0)
 
 # At run-time the environment variable LD_LIBRARY_PATH can override the
 # DSO library file that it used at build-time by using the
