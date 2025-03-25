@@ -6,7 +6,7 @@ includedir=${prefix}/include
 Name: quickscope
 Description: quickscope, 2D scope and plotter
 Version: @QUICKSCOPE_VERSION@
-Requires: gtk4 >= 4.8.3
+Requires: gtk+-3.0 >= 3.24.38
 Requires.private:
 Libs: -L${libdir} -lquickscope
 Cflags: -I${includedir}
